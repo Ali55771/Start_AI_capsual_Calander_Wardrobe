@@ -27,6 +27,8 @@ import CreatedWardrobesScreen from '../../Screens/CreatedWardrobesScreen';
 import SelectSeasonScreen from '../../Screens/SelectSeasonScreen';
 import AddBoxesScreen from '../../Screens/AddBoxesScreen';
 import ViewBoxesScreen from '../../Screens/ViewBoxesScreen';
+import MainScreen from '../../Screens/AiRecommendation/MainScreen';
+import SavedRecommendationsScreen from '../../Screens/AiRecommendation/SavedRecommendationsScreen';
 
 
 
@@ -44,6 +46,8 @@ import CalendarWardrobeScreen from '../../Screens/CalenderScreens/CalendarWardro
 import ShirtsScreen from '../../Screens/CalenderScreens/ShirtsScreen';
 import PantsScreen from '../../Screens/CalenderScreens/PantsScreen';
 import ShoesScreen from '../../Screens/CalenderScreens/ShoesScreen';
+import SelectWardrobeScreen from '../../Screens/CalenderScreens/SelectWardrobeScreen';
+import SelectItemsScreen from '../../Screens/CalenderScreens/SelectItemsScreen';
 
 // Import authentication screens
 import LoginScreen from "../../Screens/LoginScreen";
@@ -57,7 +61,12 @@ import SelectionScreen from "../../Screens/AiRecommendation/SelectionScreen";
 import RecommendationScreen from "../../Screens/AiRecommendation/RecommendationScreen";
 import FinalScreen from '../../Screens/AiRecommendation/FinalScreen';
 import WardrobePreviewScreen from '../../Screens/WardrobePreviewScreen';
+import CapsuleWardrobeScreen from '../../Screens/CapsuleWardrobeScreen';
+import CapsuleCombinationsScreen from '../../Screens/CapsuleCombinationsScreen';
+import CapsuleEntryScreen from '../../Screens/CapsuleEntryScreen';
+import SavedCombinationsScreen from '../../Screens/SavedCombinationsScreen';
 
+import CalendarTabNavigator from '../../navigation/CalendarTabNavigator';
 
 
 const Stack = createStackNavigator();
@@ -95,6 +104,7 @@ export default function IndexScreen() {
 
           {/* Wardrobe Setup Screens */}
           <Stack.Screen name="GetStart" component={GetStartScreen} />
+          <Stack.Screen name="MainScreen" component={MainScreen} />
 
         
           <Stack.Screen name="AssignTags" component={AssignTags} />
@@ -122,11 +132,20 @@ export default function IndexScreen() {
           <Stack.Screen name="ShirtsScreen" component={ShirtsScreen} />
           <Stack.Screen name="PantsScreen" component={PantsScreen} />
           <Stack.Screen name="ShoesScreen" component={ShoesScreen} />
+
+          {/* Manual Outfit Planning Screens */}
+          <Stack.Screen name="SelectWardrobeScreen" component={SelectWardrobeScreen} />
+          <Stack.Screen name="SelectItemsScreen" component={SelectItemsScreen} />
           <Stack.Screen name="IntroScreen" component={IntroScreen} options={{ headerShown: false }} />
           <Stack.Screen name="SelectionScreen" component={SelectionScreen} options={{ headerShown: false }} />
           <Stack.Screen name="RecommendationScreen" component={RecommendationScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="FinalScreen" component={FinalScreen} options={{ headerShown: false }} />
           <Stack.Screen name="WardrobePreviewScreen" component={WardrobePreviewScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="CapsuleWardrobeScreen" component={CapsuleWardrobeScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="CapsuleCombinationsScreen" component={CapsuleCombinationsScreen} />
+          <Stack.Screen name="CapsuleEntryScreen" component={CapsuleEntryScreen} />
+          <Stack.Screen name="SavedCombinationsScreen" component={SavedCombinationsScreen} />
+          <Stack.Screen name="SavedRecommendationsScreen" component={SavedRecommendationsScreen} options={{ headerShown: false }} />
           
 
            

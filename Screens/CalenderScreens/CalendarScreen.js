@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import BottomNav from '../../components/BottomNav';
 
 export default function CalendarScreen({ navigation }) {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -69,48 +70,51 @@ export default function CalendarScreen({ navigation }) {
   // --- End of original logic ---
 
   return (
-    <LinearGradient colors={['#2c1d1a', '#4a302d']} style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
-          <Ionicons name="arrow-back-outline" size={28} color="#FFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Calendar</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('SavedEventsScreen')} style={styles.headerButton}>
-          <Ionicons name="bookmarks-outline" size={24} color="#FFF" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Calendar Body */}
-      <View style={styles.calendarContainer}>
-        <View style={styles.monthHeader}>
-          <TouchableOpacity onPress={() => changeMonth(-1)}>
-            <Ionicons name="chevron-back-outline" size={28} color="rgba(255, 255, 255, 0.8)" />
+    <View style={{ flex: 1, paddingBottom: 65, backgroundColor: '#2c1d1a' }}>
+      <LinearGradient colors={['#2c1d1a', '#4a302d']} style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
+            <Ionicons name="arrow-back-outline" size={28} color="#FFF" />
           </TouchableOpacity>
-          <Text style={styles.monthYearText}>
-            {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
-          </Text>
-          <TouchableOpacity onPress={() => changeMonth(1)}>
-            <Ionicons name="chevron-forward-outline" size={28} color="rgba(255, 255, 255, 0.8)" />
+          <Text style={styles.headerTitle}>Calendar</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('SavedEventsScreen')} style={styles.headerButton}>
+            <Ionicons name="bookmarks-outline" size={24} color="#FFF" />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.weekDaysContainer}>
-          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
-            <Text key={index} style={styles.weekDayText}>{day}</Text>
-          ))}
+        {/* Calendar Body */}
+        <View style={styles.calendarContainer}>
+          <View style={styles.monthHeader}>
+            <TouchableOpacity onPress={() => changeMonth(-1)}>
+              <Ionicons name="chevron-back-outline" size={28} color="rgba(255, 255, 255, 0.8)" />
+            </TouchableOpacity>
+            <Text style={styles.monthYearText}>
+              {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+            </Text>
+            <TouchableOpacity onPress={() => changeMonth(1)}>
+              <Ionicons name="chevron-forward-outline" size={28} color="rgba(255, 255, 255, 0.8)" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.weekDaysContainer}>
+            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+              <Text key={index} style={styles.weekDayText}>{day}</Text>
+            ))}
+          </View>
+
+          <View style={styles.daysContainer}>{renderCalendar()}</View>
         </View>
 
-        <View style={styles.daysContainer}>{renderCalendar()}</View>
-      </View>
-
-      {/* Floating Action Button */}
-      <Pressable style={styles.fab} onPress={() => navigation.navigate('CreateEventScreen')}>
-         <LinearGradient colors={['#C4704F', '#A05A3F']} style={styles.fabGradient}>
-            <Ionicons name="add-outline" size={32} color="#FFFFFF" />
-         </LinearGradient>
-      </Pressable>
-    </LinearGradient>
+        {/* Floating Action Button */}
+        <Pressable style={styles.fab} onPress={() => navigation.navigate('CreateEventScreen')}>
+           <LinearGradient colors={['#C4704F', '#A05A3F']} style={styles.fabGradient}>
+              <Ionicons name="add-outline" size={32} color="#FFFFFF" />
+           </LinearGradient>
+        </Pressable>
+      </LinearGradient>
+      <BottomNav />
+    </View>
   );
 }
 

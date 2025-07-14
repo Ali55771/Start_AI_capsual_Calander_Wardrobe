@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, Image, StyleSheet, ScrollView } from 'react-native';
+import BottomNav from '../components/BottomNav';
 
 const WardrobeScreen = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -52,6 +53,7 @@ const WardrobeScreen = () => {
           <Text style={styles.addText}>+</Text>
         </TouchableOpacity>
       </View>
+      <BottomNav />
     </View>
   );
 };

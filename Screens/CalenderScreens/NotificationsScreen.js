@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, FlatList } from 'react-native';
-import { getDatabase, ref, onValue, remove, get } from 'firebase/database';
+import { getDatabase, ref, onValue, remove, get, push, set } from 'firebase/database';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import NotificationService from '../../services/NotificationService';
+import BottomNav from '../../components/BottomNav';
 
 export default function NotificationsScreen({ navigation }) {
   const [notifications, setNotifications] = useState([]);
@@ -82,7 +83,7 @@ export default function NotificationsScreen({ navigation }) {
         <View style={styles.notificationContent}>
           <Text style={styles.eventName}>{getEventName(item.eventId)}</Text>
           <Text style={styles.notificationMessage}>
-            ⏰ Your event is approaching! Get ready for {getEventName(item.eventId)}
+            {item.message || `Your ${getEventName(item.eventId)} event is just around the corner. Please make sure your outfit is ready on time.`}
           </Text>
           <Text style={styles.notificationTime}>
             {formatTime(item.createdAt)}
@@ -107,36 +108,27 @@ export default function NotificationsScreen({ navigation }) {
   );
 
   return (
-    <LinearGradient colors={['#2c1d1a', '#4a302d']} style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back-outline" size={28} color="#FFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Notifications</Text>
-        <TouchableOpacity 
-          style={styles.testButton}
-          onPress={async () => {
-            const success = await NotificationService.sendTestNotification();
-            if (success) {
-              Alert.alert('Test Notification', 'Test notification scheduled! Check in 5 seconds.');
-            } else {
-              Alert.alert('Error', 'Failed to schedule test notification.');
-            }
-          }}
-        >
-          <Ionicons name="flash-outline" size={24} color="#FFF" />
-        </TouchableOpacity>
-      </View>
+    <View style={{ flex: 1, paddingBottom: 65, backgroundColor: '#2c1d1a' }}>
+      <LinearGradient colors={['#2c1d1a', '#4a302d']} style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back-outline" size={28} color="#FFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Notifications</Text>
+          <View style={{ width: 48 }} />
+        </View>
 
-      <FlatList
-        data={notifications}
-        renderItem={renderNotification}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
-        ListEmptyComponent={EmptyNotifications}
-        showsVerticalScrollIndicator={false}
-      />
-    </LinearGradient>
+        <FlatList
+          data={notifications}
+          renderItem={renderNotification}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContainer}
+          ListEmptyComponent={EmptyNotifications}
+          showsVerticalScrollIndicator={false}
+        />
+      </LinearGradient>
+      <BottomNav />
+    </View>
   );
 }
 
@@ -161,9 +153,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#FFFFFF',
-  },
-  testButton: {
-    padding: 10,
   },
   listContainer: {
     paddingHorizontal: 20,

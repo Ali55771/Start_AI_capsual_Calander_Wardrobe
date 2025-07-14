@@ -13,9 +13,11 @@ import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import Toast from 'react-native-toast-message';
 import ClothingDetailsForm from './ClothingDetailsForm';
+import BottomNav from '../components/BottomNav';
 
-export default function AddClothingScreen({ navigation }) {
+export default function AddClothingScreen({ navigation, route }) {
   const [image, setImage] = useState(null);
+  const { wardrobeId, boxName } = route.params || {};
   const anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -78,7 +80,7 @@ export default function AddClothingScreen({ navigation }) {
         <View style={{ width: 28 }} />
       </Animated.View>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <ScrollView contentContainerStyle={[styles.scrollContainer, {paddingBottom: 90}]}>
         {!image ? (
           <Animated.View style={[styles.uploaderContainer, uploaderAnim]}>
             <Text style={styles.uploaderTitle}>Add a Photo</Text>
@@ -97,10 +99,11 @@ export default function AddClothingScreen({ navigation }) {
         ) : (
           <View style={styles.formContainer}>
             <Animated.Image source={{ uri: image }} style={[styles.imagePreview, uploaderAnim]} />
-            <ClothingDetailsForm image={image} />
+            <ClothingDetailsForm image={image} wardrobeId={wardrobeId} boxName={boxName} />
           </View>
         )}
       </ScrollView>
+      <BottomNav />
     </LinearGradient>
   );
 }

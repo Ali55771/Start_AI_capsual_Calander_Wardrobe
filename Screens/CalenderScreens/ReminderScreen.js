@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getDatabase, ref, onValue, remove, set } from 'firebase/database';
+import BottomNav from '../../components/BottomNav';
 
 // Enable LayoutAnimation for Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -47,59 +48,62 @@ export default function ReminderScreen({ navigation, route }) {
   };
 
   return (
-    <LinearGradient colors={['#2c1d1a', '#4a302d']} style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
-          <Ionicons name="arrow-back-outline" size={28} color="#FFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Reminders</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity onPress={() => navigation.navigate('AddAlarmScreen', { event })} style={styles.headerButton}>
-            <Ionicons name="add-outline" size={32} color="#FFF" />
+    <View style={{ flex: 1, paddingBottom: 65, backgroundColor: '#2c1d1a' }}>
+      <LinearGradient colors={['#2c1d1a', '#4a302d']} style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
+            <Ionicons name="arrow-back-outline" size={28} color="#FFF" />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setEditMode(!editMode)} style={styles.headerButton}>
-            <Ionicons name={editMode ? 'close-outline' : 'create-outline'} size={28} color="#FFF" />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.eventCard}>
-          <Text style={styles.eventName}>{event.eventName}</Text>
-          <Text style={styles.eventTime}>{`${new Date(event.date).toDateString()} at ${event.startTime}`}</Text>
-        </View>
-
-        {reminders.length > 0 ? (
-          <>
-            <Text style={styles.sectionTitle}>Your Reminders</Text>
-            {reminders.map(reminder => (
-              <View key={reminder.id} style={styles.reminderCard}>
-                <Text style={styles.reminderTime}>{reminder.time}</Text>
-                <View style={styles.reminderActions}>
-                  <Switch
-                    trackColor={{ false: '#767577', true: '#C4704F' }}
-                    thumbColor={reminder.enabled ? '#FFFFFF' : '#f4f3f4'}
-                    onValueChange={() => toggleReminder(reminder.id, reminder.enabled)}
-                    value={reminder.enabled}
-                  />
-                  {editMode && (
-                    <TouchableOpacity onPress={() => deleteReminder(reminder.id)} style={styles.deleteButton}>
-                      <Ionicons name="trash-outline" size={24} color="#E57373" />
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-            ))}
-          </>
-        ) : (
-          <View style={styles.noRemindersContainer}>
-            <Ionicons name="notifications-off-outline" size={60} color="rgba(255, 255, 255, 0.5)" />
-            <Text style={styles.noRemindersText}>No reminders set yet.</Text>
-            <Text style={styles.noRemindersSubText}>Tap the '+' icon to add one.</Text>
+          <Text style={styles.headerTitle}>Reminders</Text>
+          <View style={styles.headerActions}>
+            <TouchableOpacity onPress={() => navigation.navigate('AddAlarmScreen', { event })} style={styles.headerButton}>
+              <Ionicons name="add-outline" size={32} color="#FFF" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setEditMode(!editMode)} style={styles.headerButton}>
+              <Ionicons name={editMode ? 'close-outline' : 'create-outline'} size={28} color="#FFF" />
+            </TouchableOpacity>
           </View>
-        )}
-      </ScrollView>
-    </LinearGradient>
+        </View>
+
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <View style={styles.eventCard}>
+            <Text style={styles.eventName}>{event.eventName}</Text>
+            <Text style={styles.eventTime}>{`${new Date(event.date).toDateString()} at ${event.startTime}`}</Text>
+          </View>
+
+          {reminders.length > 0 ? (
+            <>
+              <Text style={styles.sectionTitle}>Your Reminders</Text>
+              {reminders.map(reminder => (
+                <View key={reminder.id} style={styles.reminderCard}>
+                  <Text style={styles.reminderTime}>{reminder.time}</Text>
+                  <View style={styles.reminderActions}>
+                    <Switch
+                      trackColor={{ false: '#767577', true: '#C4704F' }}
+                      thumbColor={reminder.enabled ? '#FFFFFF' : '#f4f3f4'}
+                      onValueChange={() => toggleReminder(reminder.id, reminder.enabled)}
+                      value={reminder.enabled}
+                    />
+                    {editMode && (
+                      <TouchableOpacity onPress={() => deleteReminder(reminder.id)} style={styles.deleteButton}>
+                        <Ionicons name="trash-outline" size={24} color="#E57373" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+              ))}
+            </>
+          ) : (
+            <View style={styles.noRemindersContainer}>
+              <Ionicons name="notifications-off-outline" size={60} color="rgba(255, 255, 255, 0.5)" />
+              <Text style={styles.noRemindersText}>No reminders set yet.</Text>
+              <Text style={styles.noRemindersSubText}>Tap the '+' icon to add one.</Text>
+            </View>
+          )}
+        </ScrollView>
+      </LinearGradient>
+      <BottomNav />
+    </View>
   );
 }
 

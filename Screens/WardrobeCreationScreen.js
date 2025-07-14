@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getFirestore, collection, addDoc, deleteDoc, doc, getDocs, query, where, updateDoc } from 'firebase/firestore';
 import { UserContext } from '../context/UserContext';
 import { db } from '../config/firebaseConfig';
+import BottomNav from '../components/BottomNav';
 
 const WardrobeCreationScreen = () => {
   const { user } = useContext(UserContext); // Get user from context
@@ -190,8 +191,8 @@ const WardrobeCreationScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+    <LinearGradient colors={['#F5EADD', '#A0785A']} style={styles.container}>
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('WardrobeOptionsScreen')}>
         <Ionicons name="arrow-back" size={28} color="#A0785A" />
       </TouchableOpacity>
       <Text style={styles.headerTitle}>
@@ -203,8 +204,7 @@ const WardrobeCreationScreen = () => {
           Only active wardrobes can be opened. Activate a wardrobe to access it.
         </Text>
       )}
-
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={[styles.scrollContent, {paddingBottom: 90}]}> 
         {wardrobes.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.message}>You haven't created any wardrobes yet. Click the button below to create your first wardrobe.</Text>
@@ -215,90 +215,96 @@ const WardrobeCreationScreen = () => {
           </View>
         ) : (
           wardrobes.map((wardrobe) => (
-            <View key={wardrobe.id} style={styles.wardrobeContainer}>
-              <TouchableOpacity 
-                style={styles.wardrobeButton} 
-                onPress={() => handleWardrobePress(wardrobe)} 
-                disabled={from === 'create'}
-              >
-                <LinearGradient
-                  colors={from === 'open' && !wardrobe.isActive ? ['#D3D3D3', '#A9A9A9'] : ['#C5A78F', '#A0785A']}
-                  style={[
-                    styles.wardrobeCard, 
-                    wardrobe.isActive && styles.activeWardrobeCard,
-                    from === 'open' && !wardrobe.isActive && styles.inactiveWardrobeCard
-                  ]}
+            <Animated.View key={wardrobe.id} style={{ opacity: 1, transform: [{ scale: 1 }] }}>
+              <View style={styles.wardrobeContainer}>
+                <TouchableOpacity 
+                  style={styles.wardrobeButton} 
+                  onPress={() => handleWardrobePress(wardrobe)} 
+                  disabled={from === 'create'}
+                  activeOpacity={0.8}
                 >
-                  <Text style={[
-                    styles.wardrobeCardText,
-                    from === 'open' && !wardrobe.isActive && styles.inactiveWardrobeText
-                  ]}>
-                    {wardrobe.season.replace('(A)', '(Autumn)')} Wardrobe
-                  </Text>
-                  {wardrobe.isActive && (
-                    <View style={styles.activeIndicator}>
-                      <Text style={styles.activeText}>ACTIVE</Text>
-                    </View>
-                  )}
-                  {from === 'open' && !wardrobe.isActive && (
-                    <View style={styles.inactiveIndicator}>
-                      <Text style={styles.inactiveText}>INACTIVE</Text>
-                    </View>
-                  )}
-                </LinearGradient>
-              </TouchableOpacity>
-              <View style={styles.actionButtons}>
-                {wardrobe.isActive ? (
-                  <TouchableOpacity
-                    style={styles.deactivateButton}
-                    onPress={() => deactivateWardrobe(wardrobe.id)}
+                  <LinearGradient
+                    colors={from === 'open' && !wardrobe.isActive ? ['#D3BFA6', '#A0785A'] : ['#C5A78F', '#A0785A']}
+                    style={[
+                      styles.wardrobeCard, 
+                      wardrobe.isActive && styles.activeWardrobeCard,
+                      from === 'open' && !wardrobe.isActive && styles.inactiveWardrobeCard
+                    ]}
                   >
-                    <Ionicons name="pause-circle-outline" size={24} color="#FF6B6B" />
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    style={styles.activateButton}
-                    onPress={() => activateWardrobe(wardrobe.id)}
-                  >
-                    <Ionicons name="play-circle-outline" size={24} color="#4ECDC4" />
-                  </TouchableOpacity>
-                )}
-                
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={() => {
-                    Alert.alert(
-                      'Delete Wardrobe',
-                      'Are you sure you want to delete this wardrobe? This action cannot be undone.',
-                      [
-                        { text: 'Cancel', style: 'cancel' },
-                        { text: 'Delete', onPress: () => deleteWardrobe(wardrobe.id), style: 'destructive' }
-                      ]
-                    );
-                  }}
-                >
-                  <Ionicons name="trash-outline" size={24} color="#A0785A" />
+                    <Text style={[
+                      styles.wardrobeCardText,
+                      from === 'open' && !wardrobe.isActive && styles.inactiveWardrobeText
+                    ]}>
+                      {wardrobe.season.replace('(A)', '(Autumn)')} Wardrobe
+                    </Text>
+                    {wardrobe.isActive && (
+                      <View style={styles.activeIndicator}>
+                        <Text style={styles.activeText}>ACTIVE</Text>
+                      </View>
+                    )}
+                    {from === 'open' && !wardrobe.isActive && (
+                      <View style={styles.inactiveIndicator}>
+                        <Text style={styles.inactiveText}>INACTIVE</Text>
+                      </View>
+                    )}
+                  </LinearGradient>
                 </TouchableOpacity>
+                <View style={styles.actionButtons}>
+                  {wardrobe.isActive ? (
+                    <TouchableOpacity
+                      style={styles.deactivateButton}
+                      onPress={() => deactivateWardrobe(wardrobe.id)}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="pause-circle-outline" size={24} color="#FF6B6B" />
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.activateButton}
+                      onPress={() => activateWardrobe(wardrobe.id)}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="play-circle-outline" size={24} color="#4ECDC4" />
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => {
+                      Alert.alert(
+                        'Delete Wardrobe',
+                        'Are you sure you want to delete this wardrobe? This action cannot be undone.',
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          { text: 'Delete', onPress: () => deleteWardrobe(wardrobe.id), style: 'destructive' }
+                        ]
+                      );
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="trash-outline" size={24} color="#A0785A" />
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
+            </Animated.View>
           ))
         )}
       </ScrollView>
-
       {from !== 'open' && (
         <TouchableOpacity
           style={styles.createButton}
           onPress={handleCreateWardrobe}
+          activeOpacity={0.8}
         >
           <LinearGradient
-              colors={['#C5A78F', '#A0785A']}
+              colors={['#A0785A', '#C5A78F']}
               style={styles.createButtonGradient}
           >
               <Text style={styles.createButtonText}>Create Wardrobe</Text>
           </LinearGradient>
         </TouchableOpacity>
       )}
-    </View>
+      <BottomNav />
+    </LinearGradient>
   );
 };
 
@@ -429,7 +435,7 @@ const styles = StyleSheet.create({
   },
   createButton: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 90, // move above BottomNav
     width: '80%',
   },
   createButtonGradient: {

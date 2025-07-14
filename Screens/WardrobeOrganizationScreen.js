@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { UserContext } from "../context/UserContext";
 import { collection, doc, getDocs, deleteDoc, query, where } from "firebase/firestore";
+import { LinearGradient } from 'expo-linear-gradient';
 
 
 function WardrobeOrganizationScreen() {
@@ -94,103 +95,105 @@ function WardrobeOrganizationScreen() {
   }, {});
   
   return (
-<Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-  <View style={styles.headerContainer}>
-    <TouchableOpacity onPress={() => navigation.navigate("HomeScreen")}>
-      <Ionicons name="arrow-back" size={24} color="#9B673E" />
-    </TouchableOpacity>
-    
-    <View style={styles.header}>
-      <TouchableOpacity style={styles.shirtIcon}>
-        <Ionicons name="shirt-outline" size={22} color="#9B673E" />
-      </TouchableOpacity>
-      <Text style={styles.headerText}>Your Wardrobe</Text>
-    </View>
+    <LinearGradient colors={['#F5EADD', '#A0785A']} style={styles.container}>
+      <Animated.View style={[styles.innerContainer, { opacity: fadeAnim }]}>
+        <View style={styles.headerContainer}>
+          <TouchableOpacity onPress={() => navigation.navigate("HomeScreen")}>
+            <Ionicons name="arrow-back" size={24} color="#9B673E" />
+          </TouchableOpacity>
+          
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.shirtIcon}>
+              <Ionicons name="shirt-outline" size={22} color="#9B673E" />
+            </TouchableOpacity>
+            <Text style={styles.headerText}>Your Wardrobe</Text>
+          </View>
 
 
 
 
-  <TouchableOpacity onPress={() => navigation.navigate("AddClothingScreen")}>
-    <Ionicons name="add-circle" size={30} color="#9B673E" />
-  </TouchableOpacity>
-</View>
+          <TouchableOpacity onPress={() => navigation.navigate("AddClothingScreen")}>
+            <Ionicons name="add-circle" size={30} color="#9B673E" />
+          </TouchableOpacity>
+        </View>
 
+        
+        <View style={styles.seasonTabs}>
+          {uniqueBoxes.map((box) => (
+            <TouchableOpacity
+              key={box}
+              style={[styles.seasonTab, selectedSeason === box && styles.activeTab]}
+              onPress={() => setSelectedSeason(box)} // Set selected box for filtering
+            >
+              <Text style={selectedSeason === box ? styles.activeTabText : styles.tabText}>
+                {box}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        
+        {loading ? (
+          <ActivityIndicator size="large" color="#9B673E" />
+        ) : (
+          Object.keys(groupedByBox).map((box) => (
+            // Only show the clothing items of the selected box
+            (selectedSeason === "All" || selectedSeason === box) && (
+              <View key={box} style={styles.categoryContainer}>
+                <TouchableOpacity
+                  style={styles.categoryHeader}
+                  onPress={() => setExpandedBox(expandedBox === box ? null : box)} // Toggle expanded box
+                >
+                  <Text style={styles.categoryTitle}>{box}</Text> 
+                  <Ionicons
+                    name={expandedBox === box ? "chevron-up" : "chevron-down"}
+                    size={20}
+                    color="#9B673E"
+                  />
+                </TouchableOpacity>
   
-<View style={styles.seasonTabs}>
-    {uniqueBoxes.map((box) => (
-      <TouchableOpacity
-        key={box}
-        style={[styles.seasonTab, selectedSeason === box && styles.activeTab]}
-        onPress={() => setSelectedSeason(box)} // Set selected box for filtering
-      >
-        <Text style={selectedSeason === box ? styles.activeTabText : styles.tabText}>
-          {box}
-        </Text>
-      </TouchableOpacity>
-    ))}
-  </View>
-  
-      {loading ? (
-        <ActivityIndicator size="large" color="#9B673E" />
-      ) : (
-        Object.keys(groupedByBox).map((box) => (
-          // Only show the clothing items of the selected box
-          (selectedSeason === "All" || selectedSeason === box) && (
-            <View key={box} style={styles.categoryContainer}>
-              <TouchableOpacity
-                style={styles.categoryHeader}
-                onPress={() => setExpandedBox(expandedBox === box ? null : box)} // Toggle expanded box
-              >
-                <Text style={styles.categoryTitle}>{box}</Text> 
-                <Ionicons
-                  name={expandedBox === box ? "chevron-up" : "chevron-down"}
-                  size={20}
-                  color="#9B673E"
-                />
-              </TouchableOpacity>
-  
-              {expandedBox === box && (
-                <FlatList
-  data={groupedByBox[box]} // Display clothing items from the selected box
-  keyExtractor={(item) => item.id}
-  numColumns={2}
-  renderItem={({ item }) => (
-    <View style={styles.card}>
-      <Image source={{ uri: item.imageUrl }} style={styles.wardrobeImage} />
-      <Text style={styles.itemLabel}>{item.outfitType}</Text>
+                {expandedBox === box && (
+                  <FlatList
+                    data={groupedByBox[box]} // Display clothing items from the selected box
+                    keyExtractor={(item) => item.id}
+                    numColumns={2}
+                    renderItem={({ item }) => (
+                      <View style={styles.card}>
+                        <Image source={{ uri: item.imageUrl }} style={styles.wardrobeImage} />
+                        <Text style={styles.itemLabel}>{item.outfitType}</Text>
 
-      {/* Display additional details */}
-      <Text style={styles.clothingType}> {item.clothingType}</Text>
+                        {/* Display additional details */}
+                        <Text style={styles.clothingType}> {item.clothingType}</Text>
 
-      <Text style={styles.colour}> {item.Colour}</Text> 
+                        <Text style={styles.colour}> {item.Colour}</Text> 
 
  
-      
-      <View style={styles.actionButtons}>
-        <TouchableOpacity
-          style={styles.editButton}
-          onPress={() => navigation.navigate("ClothingDetailsForm", { item })}
-        >
-          <Ionicons name="create-outline" size={20} color="#fff" />
-        </TouchableOpacity>
+                        
+                        <View style={styles.actionButtons}>
+                          <TouchableOpacity
+                            style={styles.editButton}
+                            onPress={() => navigation.navigate("ClothingDetailsForm", { item })}
+                          >
+                            <Ionicons name="create-outline" size={20} color="#fff" />
+                          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(item)}>
-          <Ionicons name="trash-outline" size={20} color="#fff" />
-        </TouchableOpacity>
-      </View>
-    </View>
-  )}
-/>
+                          <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(item)}>
+                            <Ionicons name="trash-outline" size={20} color="#fff" />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    )}
+                  />
 
 
-)}
+                )}
 
-              
-            </View>
-          )
-        ))
-      )}
-    </Animated.View>
+                
+              </View>
+            )
+          ))
+        )}
+      </Animated.View>
+    </LinearGradient>
   );
   
   
@@ -202,6 +205,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F5E3D3",
     padding: 20,
+  },
+  innerContainer: {
+    flex: 1,
   },
   headerContainer: {
     flexDirection: "row",

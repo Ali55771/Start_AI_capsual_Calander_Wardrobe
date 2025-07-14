@@ -75,7 +75,7 @@ export default function AddAlarmScreen({ navigation, route }) {
         event.id,
         event.eventName,
         notificationTime,
-        `⏰ Your event "${event.eventName}" is approaching! Get ready for your event.`
+        `Your ${event.eventName} event is just around the corner. Please make sure your outfit is ready on time.`
       );
 
       Alert.alert('Success', 'Alarm saved and notification scheduled!');
@@ -156,6 +156,32 @@ export default function AddAlarmScreen({ navigation, route }) {
 
       <TouchableOpacity style={styles.saveButton} onPress={handleSaveAlarm}>
         <Text style={styles.saveButtonText}>Save Alarm</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={[styles.saveButton, { backgroundColor: '#A0785A', marginTop: 10 }]} onPress={async () => {
+        const now = new Date();
+        const notificationTime = new Date(now.getTime() + 10000); // 10 seconds from now
+        await NotificationService.scheduleEventNotification(
+          event.id,
+          event.eventName,
+          notificationTime,
+          'Your test event is just around the corner. Please make sure your outfit is ready on time.'
+        );
+        Alert.alert('Quick Reminder', 'Notification will appear in 10 seconds!');
+      }}>
+        <Text style={styles.saveButtonText}>Quick Reminder (10s)</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={[styles.saveButton, { backgroundColor: '#8B7355', marginTop: 10 }]} onPress={async () => {
+        const now = new Date();
+        const notificationTime = new Date(now.getTime() + 60000); // 1 minute from now
+        await NotificationService.scheduleEventNotification(
+          event.id,
+          event.eventName,
+          notificationTime,
+          'Your test event is just around the corner. Please make sure your outfit is ready on time.'
+        );
+        Alert.alert('1 Minute Test', 'Notification will appear in 1 minute!');
+      }}>
+        <Text style={styles.saveButtonText}>Test (1 minute)</Text>
       </TouchableOpacity>
     </LinearGradient>
   );

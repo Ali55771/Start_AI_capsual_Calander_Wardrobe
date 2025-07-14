@@ -14,6 +14,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { getDatabase, ref, onValue, remove, get } from 'firebase/database';
+import BottomNav from '../../components/BottomNav';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -112,24 +113,26 @@ export default function SavedEventsScreen({ navigation }) {
   );
 
   return (
-    <LinearGradient colors={['#2c1d1a', '#4a302d']} style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
-          <Ionicons name="arrow-back-outline" size={28} color="#FFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Saved Events</Text>
-        <View style={{ width: 48 }} />
-      </View>
-
-      <SectionList
-        sections={sections}
-        keyExtractor={(item) => item.id}
-        renderItem={renderEventCard}
-        renderSectionHeader={({ section: { title } }) => <Text style={styles.sectionHeader}>{title}</Text>}
-        ListEmptyComponent={NoEventsComponent}
-        contentContainerStyle={{ paddingHorizontal: 15, paddingBottom: 40 }}
-      />
-    </LinearGradient>
+    <View style={{ flex: 1, paddingBottom: 65, backgroundColor: '#2c1d1a' }}>
+      <LinearGradient colors={['#2c1d1a', '#4a302d']} style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
+            <Ionicons name="arrow-back-outline" size={28} color="#FFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Saved Events</Text>
+          <View style={{ width: 48 }} />
+        </View>
+        <SectionList
+          sections={sections}
+          keyExtractor={(item) => item.id}
+          renderItem={renderEventCard}
+          renderSectionHeader={({ section: { title } }) => <Text style={styles.sectionHeader}>{title}</Text>}
+          ListEmptyComponent={NoEventsComponent}
+          contentContainerStyle={{ paddingHorizontal: 15, paddingBottom: 40 }}
+        />
+      </LinearGradient>
+      <BottomNav />
+    </View>
   );
 }
 

@@ -1,19 +1,22 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Animated } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import BottomNav from '../components/BottomNav';
+import { LinearGradient } from 'expo-linear-gradient';
+
 
 const WardrobePreviewScreen = () => {
   const navigation = useNavigation();
   
 
     return (
-    <View style={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+    <LinearGradient colors={['#F5EADD', '#A0785A']} style={styles.container}>
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.8}>
         <Ionicons name="arrow-back" size={28} color="#A0785A" />
       </TouchableOpacity>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.titleContainer}>
+        <TouchableOpacity style={styles.titleContainer} activeOpacity={0.8}>
           <Text style={styles.title}>Wardrobe</Text>
         </TouchableOpacity>
       </View>
@@ -27,12 +30,15 @@ const WardrobePreviewScreen = () => {
       </View>
 
       <TouchableOpacity
-        style={styles.nextButton}
+        style={[styles.nextButton, {marginBottom: 90}]}
         onPress={() => navigation.navigate('WardrobeOptionsScreen')}
+        activeOpacity={0.8}
       >
         <Text style={styles.nextButtonText}>Next</Text>
       </TouchableOpacity>
-    </View>
+      <BottomNav />
+      
+    </LinearGradient>
   );
 };
 

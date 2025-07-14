@@ -1,15 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, TextInput, Alert } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../config/firebaseConfig';
+import BottomNav from '../components/BottomNav';
+import { UserContext } from '../context/UserContext';
 
 const ViewBoxesScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { season, boxCount, initialLabels, isViewing, onWardrobeCreated, wardrobeId } = route.params;
+  const { user } = useContext(UserContext);
 
   const [labels, setLabels] = useState([]);
   const [isModalVisible, setModalVisible] = useState(false);
@@ -119,19 +122,35 @@ const ViewBoxesScreen = () => {
     );
   };
 
-  const handleFinishAndSave = () => {
-    const newWardrobe = {
-      id: Date.now().toString(),
-      season,
-      boxCount: String(labels.length),
-      labels,
-    };
-
-    if (onWardrobeCreated) {
-      onWardrobeCreated(newWardrobe);
+  const handleFinishAndSave = async () => {
+    try {
+      // Fetch existing wardrobes for this user and season
+      const userId = user?.uid;
+      if (!userId) {
+        Alert.alert('Error', 'User not found.');
+        return;
+      }
+      const q = query(collection(db, 'wardrobes'), where('userId', '==', userId), where('season', '==', season));
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        Alert.alert('Duplicate Wardrobe', 'A wardrobe with this name/season already exists. Please choose a different name or season.');
+        return;
+      }
+      const newWardrobe = {
+        id: Date.now().toString(),
+        season,
+        boxCount: String(labels.length),
+        labels,
+        userId,
+      };
+      if (onWardrobeCreated) {
+        onWardrobeCreated(newWardrobe);
+      }
+      navigation.navigate('WardrobeCreationScreen', { newWardrobe });
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save wardrobe.');
+      console.error(error);
     }
-    
-    navigation.navigate('WardrobeCreationScreen', { newWardrobe });
   };
 
   const renderBox = (index) => {
@@ -185,31 +204,29 @@ const ViewBoxesScreen = () => {
       </View>
       <Text style={styles.subTitle}>All Boxes</Text>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={[styles.scrollContent, {paddingBottom: 90}]}>
         {labels.map((_, index) => renderBox(index))}
+        {isViewing && (
+          <TouchableOpacity style={styles.finishButton} onPress={handleAddBox}>
+            <LinearGradient
+              colors={['#C5A78F', '#A0785A']}
+              style={styles.finishButtonGradient}
+            >
+              <Text style={styles.finishButtonText}>Add New Box</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
+        {!isViewing && (
+          <TouchableOpacity style={styles.finishButton} onPress={handleFinishAndSave}>
+            <LinearGradient
+              colors={['#C5A78F', '#A0785A']}
+              style={styles.finishButtonGradient}
+            >
+              <Text style={styles.finishButtonText}>Save</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
       </ScrollView>
-
-      {isViewing && (
-        <TouchableOpacity style={styles.finishButton} onPress={handleAddBox}>
-          <LinearGradient
-            colors={['#C5A78F', '#A0785A']}
-            style={styles.finishButtonGradient}
-          >
-            <Text style={styles.finishButtonText}>Add New Box</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      )}
-
-      {!isViewing && (
-        <TouchableOpacity style={styles.finishButton} onPress={handleFinishAndSave}>
-          <LinearGradient
-            colors={['#C5A78F', '#A0785A']}
-            style={styles.finishButtonGradient}
-          >
-            <Text style={styles.finishButtonText}>Finish & Save</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      )}
 
       <Modal
         transparent={true}
@@ -233,6 +250,7 @@ const ViewBoxesScreen = () => {
           </View>
         </View>
       </Modal>
+      <BottomNav />
     </View>
   );
 };
@@ -321,9 +339,9 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   finishButton: {
-    position: 'absolute',
-    bottom: 20,
     width: '80%',
+    alignSelf: 'center',
+    marginBottom: 20, // add space above BottomNav
   },
   finishButtonGradient: {
     paddingVertical: 18,

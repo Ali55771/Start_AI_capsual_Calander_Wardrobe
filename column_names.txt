@@ -1,0 +1,27 @@
+--- ORIGINAL COLUMN NAMES ---
+- Event Name
+- Gender
+- Time
+- OutfitType
+- Dress Type
+- Dress Color
+- Dress Fabric/Texture
+- Shoes Type
+- Shoes Color
+- Upper layer
+- Upper layer color
+- Weather Range
+
+--- STANDARDIZED COLUMN NAMES ---
+- event_name
+- gender
+- time
+- outfittype
+- dress_type
+- dress_color
+- dress_fabric_texture
+- shoes_type
+- shoes_color
+- upper_layer
+- upper_layer_color
+- weather_range

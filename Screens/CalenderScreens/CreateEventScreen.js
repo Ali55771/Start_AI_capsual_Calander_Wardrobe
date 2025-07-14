@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { getDatabase, ref, push } from 'firebase/database';
 import { app } from '../../config/firebaseConfig';
+import BottomNav from '../../components/BottomNav';
 
 const database = getDatabase(app);
 
@@ -98,73 +99,76 @@ export default function CreateEventScreen({ navigation }) {
   // --- End of original logic ---
 
   return (
-    <LinearGradient colors={['#2c1d1a', '#4a302d']} style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-      >
-        <ScrollView contentContainerStyle={styles.scrollViewContent}>
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
-              <Ionicons name="arrow-back-outline" size={28} color="#FFF" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Create Event</Text>
-            <View style={{ width: 48 }} />{/* Spacer */}
-          </View>
+    <View style={{ flex: 1, paddingBottom: 65, backgroundColor: '#2c1d1a' }}>
+      <LinearGradient colors={['#2c1d1a', '#4a302d']} style={styles.container}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <ScrollView contentContainerStyle={styles.scrollViewContent}>
+            {/* Header */}
+            <View style={styles.header}>
+              <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
+                <Ionicons name="arrow-back-outline" size={28} color="#FFF" />
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>Create Event</Text>
+              <View style={{ width: 48 }} />{/* Spacer */}
+            </View>
 
-          {/* Form */}
-          <View style={styles.formContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="Event Title"
-              placeholderTextColor="rgba(255, 255, 255, 0.5)"
-              value={eventName}
-              onChangeText={setEventName}
-            />
-            <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
-              <Text style={styles.inputText}>{`Date: ${date.toLocaleDateString()}`}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.input} onPress={() => setShowTimePicker(true)}>
-              <Text style={styles.inputText}>{`Time: ${startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}</Text>
-            </TouchableOpacity>
-            <TextInput
-              style={[styles.input, styles.descriptionInput]}
-              placeholder="Description (optional)"
-              placeholderTextColor="rgba(255, 255, 255, 0.5)"
-              value={description}
-              onChangeText={setDescription}
-              multiline
-            />
-          </View>
+            {/* Form */}
+            <View style={styles.formContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Event Title"
+                placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                value={eventName}
+                onChangeText={setEventName}
+              />
+              <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
+                <Text style={styles.inputText}>{`Date: ${date.toLocaleDateString()}`}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.input} onPress={() => setShowTimePicker(true)}>
+                <Text style={styles.inputText}>{`Time: ${startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}</Text>
+              </TouchableOpacity>
+              <TextInput
+                style={[styles.input, styles.descriptionInput]}
+                placeholder="Description (optional)"
+                placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                value={description}
+                onChangeText={setDescription}
+                multiline
+              />
+            </View>
 
-          {showDatePicker && (
-            <DateTimePicker
-              value={date}
-              mode="date"
-              display="spinner"
-              onChange={onDateChange}
-              minimumDate={minDate}
-            />
-          )}
-          {showTimePicker && (
-            <DateTimePicker
-              value={startTime}
-              mode="time"
-              display="spinner"
-              onChange={onTimeChange}
-            />
-          )}
+            {showDatePicker && (
+              <DateTimePicker
+                value={date}
+                mode="date"
+                display="spinner"
+                onChange={onDateChange}
+                minimumDate={minDate}
+              />
+            )}
+            {showTimePicker && (
+              <DateTimePicker
+                value={startTime}
+                mode="time"
+                display="spinner"
+                onChange={onTimeChange}
+              />
+            )}
 
-          {/* Save Button */}
-          <Pressable onPress={saveEventToFirebase}>
-            <LinearGradient colors={['#C4704F', '#A05A3F']} style={styles.saveButton}>
-              <Text style={styles.saveButtonText}>Save Event</Text>
-            </LinearGradient>
-          </Pressable>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </LinearGradient>
+            {/* Save Button */}
+            <Pressable onPress={saveEventToFirebase}>
+              <LinearGradient colors={['#C4704F', '#A05A3F']} style={styles.saveButton}>
+                <Text style={styles.saveButtonText}>Save Event</Text>
+              </LinearGradient>
+            </Pressable>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </LinearGradient>
+      <BottomNav />
+    </View>
   );
 }
 

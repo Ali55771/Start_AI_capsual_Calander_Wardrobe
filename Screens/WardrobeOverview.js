@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList, Dimensions } from "react-native";
 import { FontAwesome5, MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import BottomNav from '../components/BottomNav';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get("window");
 
@@ -26,10 +28,10 @@ const WardrobeOverview = () => {
   const [wardrobe, setWardrobe] = useState(initialWardrobe);
 
   return (
-    <View style={styles.container}>
+    <LinearGradient colors={['#FAF3E0', '#A0785A']} style={styles.container}>
       {/* Header Section */}
       <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={0.8}>
           <Ionicons name="arrow-back" size={24} color="#9B673E" />
         </TouchableOpacity>
         <Text style={styles.header}>My Wardrobe</Text>
@@ -50,7 +52,7 @@ const WardrobeOverview = () => {
                 </View>
               ))}
               {/* Add Button for New Items */}
-              <TouchableOpacity style={styles.addButtonCard}>
+              <TouchableOpacity style={styles.addButtonCard} activeOpacity={0.8}>
                
                 <Text style={styles.addButtonText}>Add</Text>
               </TouchableOpacity>
@@ -69,7 +71,8 @@ const WardrobeOverview = () => {
         <FontAwesome5 name="boxes" size={22} color="#9B673E" />
         <Ionicons name="person" size={22} color="#9B673E" />
       </View>
-    </View>
+      <BottomNav />
+    </LinearGradient>
   );
 };
 

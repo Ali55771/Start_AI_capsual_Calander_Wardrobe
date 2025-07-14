@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getDatabase, ref, onValue, update } from 'firebase/database';
 import { getAuth } from 'firebase/auth';
+import BottomNav from '../../components/BottomNav';
 
 const OutfitCard = ({ item, type, fadeAnim }) => (
   <Animated.View style={[styles.card, { opacity: fadeAnim }]}>
@@ -99,40 +100,41 @@ export default function AIRecommendationScreen({ navigation, route }) {
   }
 
   return (
-    <LinearGradient colors={['#2c1d1a', '#4a302d']} style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={28} color="white" />
-        </TouchableOpacity>
-        <Text style={styles.title}>AI Recommendation</Text>
-        <View style={{ width: 28 }} />
-      </View>
-
-      <View style={styles.content}>
-        {generating ? (
-          <View style={styles.center}><ActivityIndicator size="large" color="#C4704F" /><Text style={styles.generatingText}>AI is thinking...</Text></View>
-        ) : recommendedOutfit ? (
-          <View style={styles.outfitContainer}>
-            <OutfitCard item={recommendedOutfit.top} type="Top" fadeAnim={fadeAnim} />
-            <OutfitCard item={recommendedOutfit.pant} type="Pant" fadeAnim={fadeAnim} />
-            <OutfitCard item={recommendedOutfit.shoe} type="Shoe" fadeAnim={fadeAnim} />
-          </View>
-        ) : (
-          <View style={styles.center}><Text style={styles.generatingText}>No items to recommend.</Text></View>
-        )}
-      </View>
-
-      <View style={styles.footer}>
-        <Pressable onPress={generateRecommendation} disabled={generating} style={({ pressed }) => [styles.button, styles.secondaryButton, pressed && styles.buttonPressed, generating && styles.disabledButton]}>
-          <Ionicons name="refresh" size={22} color="#C4704F" />
-          <Text style={[styles.buttonText, styles.secondaryButtonText]}>Try Again</Text>
-        </Pressable>
-        <Pressable onPress={handleSaveOutfit} disabled={generating || !recommendedOutfit} style={({ pressed }) => [styles.button, styles.primaryButton, pressed && styles.buttonPressed, (generating || !recommendedOutfit) && styles.disabledButton]}>
-          <Ionicons name="checkmark" size={22} color="#FFFFFF" />
-          <Text style={styles.buttonText}>Save Outfit</Text>
-        </Pressable>
-      </View>
-    </LinearGradient>
+    <View style={{ flex: 1, paddingBottom: 65, backgroundColor: '#2c1d1a' }}>
+      <LinearGradient colors={['#2c1d1a', '#4a302d']} style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={28} color="white" />
+          </TouchableOpacity>
+          <Text style={styles.title}>AI Recommendation</Text>
+          <View style={{ width: 28 }} />
+        </View>
+        <View style={styles.content}>
+          {generating ? (
+            <View style={styles.center}><ActivityIndicator size="large" color="#C4704F" /><Text style={styles.generatingText}>AI is thinking...</Text></View>
+          ) : recommendedOutfit ? (
+            <View style={styles.outfitContainer}>
+              <OutfitCard item={recommendedOutfit.top} type="Top" fadeAnim={fadeAnim} />
+              <OutfitCard item={recommendedOutfit.pant} type="Pant" fadeAnim={fadeAnim} />
+              <OutfitCard item={recommendedOutfit.shoe} type="Shoe" fadeAnim={fadeAnim} />
+            </View>
+          ) : (
+            <View style={styles.center}><Text style={styles.generatingText}>No items to recommend.</Text></View>
+          )}
+        </View>
+        <View style={styles.footer}>
+          <Pressable onPress={generateRecommendation} disabled={generating} style={({ pressed }) => [styles.button, styles.secondaryButton, pressed && styles.buttonPressed, generating && styles.disabledButton]}>
+            <Ionicons name="refresh" size={22} color="#C4704F" />
+            <Text style={[styles.buttonText, styles.secondaryButtonText]}>Try Again</Text>
+          </Pressable>
+          <Pressable onPress={handleSaveOutfit} disabled={generating || !recommendedOutfit} style={({ pressed }) => [styles.button, styles.primaryButton, pressed && styles.buttonPressed, (generating || !recommendedOutfit) && styles.disabledButton]}>
+            <Ionicons name="checkmark" size={22} color="#FFFFFF" />
+            <Text style={styles.buttonText}>Save Outfit</Text>
+          </Pressable>
+        </View>
+      </LinearGradient>
+      <BottomNav />
+    </View>
   );
 }
 

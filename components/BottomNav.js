@@ -37,11 +37,11 @@ export default function BottomNav() {
   const [activeScreen, setActiveScreen] = useState(route.name);
 
   const icons = [
-    { name: 'home', screen: 'Home', lib: FontAwesome5 },
+    { name: 'home', screen: 'HomeScreen', lib: FontAwesome5 },
     { name: 'calendar-today', screen: 'CalendarScreen', lib: MaterialIcons },
     { name: 'add', screen: 'AddClothingScreen', lib: Ionicons, isCenter: true },
     { name: 'tshirt', screen: 'GetStart', lib: FontAwesome5 },
-    { name: 'person', screen: 'ProfileScreen', lib: Ionicons },
+    { name: 'person-circle-outline', screen: 'AvatarOption', lib: Ionicons },
   ];
 
   const nonCenterIcons = icons.filter(icon => !icon.isCenter);
@@ -62,7 +62,11 @@ export default function BottomNav() {
 
   const handlePress = (screen, index) => {
     if (screen) {
-      navigation.navigate(screen);
+      if (screen === 'Home') {
+        navigation.navigate('Home'); // Always go to Home tab
+      } else {
+        navigation.navigate(screen);
+      }
     }
   };
 
@@ -93,8 +97,10 @@ const styles = StyleSheet.create({
   navContainer: {
     position: 'absolute',
     bottom: 0,
+    left: 0,
     width: '100%',
     alignItems: 'center',
+    backgroundColor: '#3E2723', // Match navbar background
   },
   navbar: {
     flexDirection: 'row',

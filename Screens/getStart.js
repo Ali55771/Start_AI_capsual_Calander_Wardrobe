@@ -62,11 +62,11 @@ const GetStartScreen = ({ navigation }) => {
       </Animated.View>
 
       <View style={styles.content}>
-        {/* Animated Illustration with bounce-in */}
+        {/* Professional Wardrobe Illustration */}
         <Animated.Image
-          source={{ uri: 'https://i.ibb.co/6g4z6T3/fashion-illustration.png' }}
-          style={[styles.illustration, imageStyles, { shadowColor: '#9B673E', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.22, shadowRadius: 18, elevation: 10 }]}
-          resizeMode="contain"
+          source={{ uri: 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=600&q=80' }}
+          style={[styles.illustration, imageStyles, { borderRadius: 30, shadowColor: '#9B673E', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.22, shadowRadius: 18, elevation: 10 }]}
+          resizeMode="cover"
         />
         {/* Animated Heading with scale and fade */}
         <Animated.Text style={[styles.title, titleStyles, { letterSpacing: 1.2 }]}>Style Your Story</Animated.Text>

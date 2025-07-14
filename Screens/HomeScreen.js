@@ -41,6 +41,11 @@ export default function Home({ route }) {
   const navigation = useNavigation();
   const { user, logout } = useContext(UserContext);
 
+  // Capsule wardrobe icon handler (optional: open wardrobe overview)
+  const handleCapsuleIconPress = () => {
+    navigation.navigate('CapsuleWardrobeScreen');
+  }
+
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().getDate());
   const [notificationCount, setNotificationCount] = useState(0);
@@ -137,6 +142,9 @@ export default function Home({ route }) {
             <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.navigate('IntroScreen')}>
               <MaterialCommunityIcons name="robot-outline" size={26} color="#EFEBE9" />
             </TouchableOpacity>
+            <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.navigate('CapsuleEntryScreen')}>
+              <MaterialCommunityIcons name="wardrobe-outline" size={26} color="#EFEBE9" />
+            </TouchableOpacity>
             <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.navigate('FavoritesScreen')}>
               <Ionicons name="heart-outline" size={26} color="#EFEBE9" />
             </TouchableOpacity>
@@ -218,46 +226,69 @@ export default function Home({ route }) {
       )}
       <Animated.View style={[styles.drawerShadow, { transform: [{ translateX: slideAnim }] }]}>
         <LinearGradient colors={['#FDF6EC', '#F5EBE0']} style={styles.drawerContainer}>
+          <ScrollView showsVerticalScrollIndicator={false}>
             <View style={styles.drawerHeader}>
-                <Image source={{ uri: user?.profileImage || "https://picsum.photos/id/64/200/200" }} style={styles.drawerAvatar} />
-                                <Text style={styles.drawerTitle}>{user?.name || "Guest"}</Text>
-                <Text style={styles.drawerSubtitle}>{user?.email || "no-email@provider.com"}</Text>
+              <Image source={{ uri: user?.profileImage || "https://picsum.photos/id/64/200/200" }} style={styles.drawerAvatar} />
+              <Text style={styles.drawerTitle}>{user?.name || "Guest"}</Text>
+              <Text style={styles.drawerSubtitle}>{user?.email || "no-email@provider.com"}</Text>
             </View>
-            
+
             <Animated.View style={{opacity: itemAnims[0], transform: [{translateX: itemAnims[0].interpolate({inputRange: [0,1], outputRange: [-50, 0]})}]}}>
-                <Pressable style={({pressed}) => [styles.drawerItem, pressed && styles.drawerItemPressed]} onPress={() => { closeDrawer(); navigation.navigate('ProfileScreen'); }}>
-                    <Ionicons name="person-outline" size={24} color="#8D6E63" /><Text style={styles.drawerText}>Profile</Text>
-                </Pressable>
+              <Pressable style={({pressed}) => [styles.drawerItem, pressed && styles.drawerItemPressed]} onPress={() => { closeDrawer(); navigation.navigate('ProfileScreen'); }}>
+                <Ionicons name="person-outline" size={24} color="#8D6E63" /><Text style={styles.drawerText}>Profile</Text>
+              </Pressable>
             </Animated.View>
 
             <Animated.View style={{opacity: itemAnims[1], transform: [{translateX: itemAnims[1].interpolate({inputRange: [0,1], outputRange: [-50, 0]})}]}}>
-                <Pressable style={({pressed}) => [styles.drawerItem, pressed && styles.drawerItemPressed]} onPress={() => { closeDrawer(); navigation.navigate('FavoritesScreen'); }}>
-                    <Ionicons name="heart-outline" size={24} color="#B5838D" /><Text style={styles.drawerText}>Favorites</Text>
-                </Pressable>
+              <Pressable style={({pressed}) => [styles.drawerItem, pressed && styles.drawerItemPressed]} onPress={() => { closeDrawer(); navigation.navigate('FavoritesScreen'); }}>
+                <Ionicons name="heart-outline" size={24} color="#B5838D" /><Text style={styles.drawerText}>Favorites</Text>
+              </Pressable>
             </Animated.View>
 
             <Animated.View style={{opacity: itemAnims[2], transform: [{translateX: itemAnims[2].interpolate({inputRange: [0,1], outputRange: [-50, 0]})}]}}>
-                <Pressable style={({pressed}) => [styles.drawerItem, pressed && styles.drawerItemPressed]} onPress={() => { closeDrawer(); navigation.navigate('CalendarScreen'); }}>
-                    <MaterialIcons name="calendar-today" size={24} color="#5C8D89" /><Text style={styles.drawerText}>Calendar</Text>
-                </Pressable>
+              <Pressable style={({pressed}) => [styles.drawerItem, pressed && styles.drawerItemPressed]} onPress={() => { closeDrawer(); navigation.navigate('CalendarScreen'); }}>
+                <MaterialIcons name="calendar-today" size={24} color="#5C8D89" /><Text style={styles.drawerText}>Calendar</Text>
+              </Pressable>
+            </Animated.View>
+
+            {/* AI Recommendation */}
+            <Animated.View style={{opacity: itemAnims[2], transform: [{translateX: itemAnims[2].interpolate({inputRange: [0,1], outputRange: [-50, 0]})}]}}>
+              <Pressable style={({pressed}) => [styles.drawerItem, pressed && styles.drawerItemPressed]} onPress={() => { closeDrawer(); navigation.navigate('IntroScreen'); }}>
+                <MaterialCommunityIcons name="robot-outline" size={24} color="#5C8D89" /><Text style={styles.drawerText}>AI Recommendation</Text>
+              </Pressable>
+            </Animated.View>
+
+            {/* Notifications */}
+            <Animated.View style={{opacity: itemAnims[2], transform: [{translateX: itemAnims[2].interpolate({inputRange: [0,1], outputRange: [-50, 0]})}]}}>
+              <Pressable style={({pressed}) => [styles.drawerItem, pressed && styles.drawerItemPressed]} onPress={() => { closeDrawer(); navigation.navigate('NotificationsScreen'); }}>
+                <Ionicons name="notifications-outline" size={24} color="#B5838D" /><Text style={styles.drawerText}>Notifications</Text>
+              </Pressable>
+            </Animated.View>
+
+            {/* Capsule Wardrobe */}
+            <Animated.View style={{opacity: itemAnims[2], transform: [{translateX: itemAnims[2].interpolate({inputRange: [0,1], outputRange: [-50, 0]})}]}}>
+              <Pressable style={({pressed}) => [styles.drawerItem, pressed && styles.drawerItemPressed]} onPress={() => { closeDrawer(); navigation.navigate('CapsuleEntryScreen'); }}>
+                <MaterialCommunityIcons name="wardrobe-outline" size={24} color="#5C8D89" /><Text style={styles.drawerText}>Capsule Wardrobe</Text>
+              </Pressable>
             </Animated.View>
 
             <Animated.View style={{opacity: itemAnims[3], transform: [{translateX: itemAnims[3].interpolate({inputRange: [0,1], outputRange: [-50, 0]})}]}}>
-                <Pressable style={({pressed}) => [styles.drawerItem, pressed && styles.drawerItemPressed]} onPress={() => { closeDrawer(); navigation.navigate('GetStart'); }}>
-                    <FontAwesome5 name="tshirt" size={20} color="#6D4C41" /><Text style={styles.drawerText}>Wardrobe</Text>
-                </Pressable>
+              <Pressable style={({pressed}) => [styles.drawerItem, pressed && styles.drawerItemPressed]} onPress={() => { closeDrawer(); navigation.navigate('GetStart'); }}>
+                <FontAwesome5 name="tshirt" size={20} color="#6D4C41" /><Text style={styles.drawerText}>Wardrobe</Text>
+              </Pressable>
             </Animated.View>
 
             <View style={{flex: 1}} />
 
             <Animated.View style={{opacity: itemAnims[4], transform: [{translateX: itemAnims[4].interpolate({inputRange: [0,1], outputRange: [-50, 0]})}]}}>
-                <Pressable style={({pressed}) => [styles.drawerItem, pressed && {backgroundColor: 'transparent'}]} onPress={() => { logout(); navigation.replace("LoginScreen"); }}>
-                    <LinearGradient colors={['#c75e5e', '#a84d4d']} style={styles.logoutButton}>
-                        <Ionicons name="log-out-outline" size={26} color="#FDF6EC" />
-                        <Text style={[styles.drawerText, styles.logoutButtonText]}>Logout</Text>
-                    </LinearGradient>
-                </Pressable>
+              <Pressable style={({pressed}) => [styles.drawerItem, pressed && {backgroundColor: 'transparent'}]} onPress={() => { logout(); navigation.replace("LoginScreen"); }}>
+                <LinearGradient colors={['#c75e5e', '#a84d4d']} style={styles.logoutButton}>
+                  <Ionicons name="log-out-outline" size={26} color="#FDF6EC" />
+                  <Text style={[styles.drawerText, styles.logoutButtonText]}>Logout</Text>
+                </LinearGradient>
+              </Pressable>
             </Animated.View>
+          </ScrollView>
         </LinearGradient>
       </Animated.View>
     </View>
@@ -267,7 +298,8 @@ export default function Home({ route }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#2c1d1a' },
   mainContent: { flex: 1 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 50 : 30, paddingBottom: 10 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 50 : 30, paddingBottom: 10 }, // keep style
+
   menuButton: { padding: 5 },
   headerIcons: { flexDirection: "row", gap: 15 },
   headerIcon: { padding: 5 },

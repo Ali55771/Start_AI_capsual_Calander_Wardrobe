@@ -26,13 +26,11 @@
         "READ_EXTERNAL_STORAGE",
         "NOTIFICATIONS",
         "RECEIVE_BOOT_COMPLETED",
-        "CAMERA",
-        "WRITE_EXTERNAL_STORAGE",
-        "READ_EXTERNAL_STORAGE",
-        "NOTIFICATIONS",
-        "RECEIVE_BOOT_COMPLETED"
+        "VIBRATE",
+        "WAKE_LOCK"
       ],
       "useNextNotificationsApi": true,
+      "allowBackup": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -55,7 +53,15 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#ffffff",
+          "sounds": ["./assets/sounds/notification.wav"]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

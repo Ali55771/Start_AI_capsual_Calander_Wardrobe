@@ -1,39 +1,49 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import BottomNav from '../components/BottomNav';
 
 const WardrobeOptionsScreen = () => {
   const navigation = useNavigation();
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => navigation.goBack()}
-      >
-        <Ionicons name="arrow-back" size={28} color="#A0785A" />
-      </TouchableOpacity>
-      <Text style={styles.topText}>What do you want to do now?</Text>
-      <LinearGradient
-        colors={['#C5A78F', '#A0785A']}
-        style={styles.gradientContainer}
-      >
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={{ flex: 1 }}
+    >
+      <LinearGradient colors={['#F5EADD', '#A0785A']} style={styles.container}>
         <TouchableOpacity
-          style={styles.button}
-          onPress={() => navigation.navigate('WardrobeCreationScreen', { from: 'create' })}
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.8}
         >
-          <Text style={styles.buttonText}>Create Wardrobe</Text>
+          <Ionicons name="arrow-back" size={28} color="#A0785A" />
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => navigation.navigate('WardrobeCreationScreen', { from: 'open' })}
+        <Text style={styles.topText}>What do you want to do now?</Text>
+        <LinearGradient
+          colors={['#C5A78F', '#A0785A']}
+          style={styles.gradientContainer}
         >
-          <Text style={styles.buttonText}>Open Wardrobe</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => navigation.navigate('WardrobeCreationScreen', { from: 'create' })}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.buttonText}>Create Wardrobe</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => navigation.navigate('WardrobeCreationScreen', { from: 'open' })}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.buttonText}>Open Wardrobe</Text>
+          </TouchableOpacity>
+        </LinearGradient>
+        <BottomNav />
       </LinearGradient>
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -49,7 +59,7 @@ const styles = StyleSheet.create({
     top: 60,
     left: 20,
     zIndex: 10,
-  },
+  }, 
   topText: {
     fontSize: 22,
     fontWeight: '600',

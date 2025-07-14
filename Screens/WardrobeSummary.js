@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator } fr
 import { useNavigation } from "@react-navigation/native";
 import { FontAwesome5, MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { UserContext } from "../context/UserContext"; // Import User Context
+import BottomNav from '../components/BottomNav';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const WardrobeSummary = ({ route }) => {
   const navigation = useNavigation();
@@ -12,9 +14,9 @@ const WardrobeSummary = ({ route }) => {
   const [loading, setLoading] = useState(false);
 
   return (
-    <View style={styles.container}>
+    <LinearGradient colors={['#F5EADD', '#A0785A']} style={styles.container}>
       <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={0.8}>
           <Ionicons name="arrow-back" size={24} color="#9B673E" />
         </TouchableOpacity>
         <Text style={styles.header}>Your Wardrobe </Text>
@@ -34,6 +36,7 @@ const WardrobeSummary = ({ route }) => {
         <TouchableOpacity 
           style={styles.nextButton} 
           onPress={() => navigation.navigate("WardrobeSetup")}
+          activeOpacity={0.8}
         >
           <Text style={styles.buttonText}>Next</Text>
         </TouchableOpacity>
@@ -48,7 +51,8 @@ const WardrobeSummary = ({ route }) => {
         <FontAwesome5 name="boxes" size={22} color="#9B673E" />
         <Ionicons name="person" size={22} color="#9B673E" />
       </View>
-    </View>
+      <BottomNav />
+    </LinearGradient>
   );
 };
 
@@ -58,7 +62,6 @@ export default WardrobeSummary;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#eacda3",
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 20,

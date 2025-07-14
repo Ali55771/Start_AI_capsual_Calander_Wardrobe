@@ -1,16 +1,16 @@
 import * as Notifications from 'expo-notifications';
 import { getDatabase, ref, push, set } from 'firebase/database';
 import { app } from '../config/firebaseConfig';
-import { registerBackgroundNotificationTask, unregisterBackgroundNotificationTask } from './BackgroundNotificationHandler';
+import { Platform, Alert } from 'react-native';
 
 const database = getDatabase(app);
 
-// Configure notification behavior
+// Simple notification handler
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
     shouldPlaySound: true,
-    shouldSetBadge: true,
+    shouldSetBadge: false,
   }),
 });
 
@@ -22,49 +22,60 @@ class NotificationService {
 
   // Initialize notification listeners
   async initialize() {
-    // Request permissions
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-    
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-    
-    if (finalStatus !== 'granted') {
-      console.log('Failed to get push token for push notification!');
-      return;
-    }
+    try {
+      console.log('Starting notification initialization...');
+      
+      // Request permissions
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      console.log('Existing permission status:', existingStatus);
+      
+      let finalStatus = existingStatus;
+      
+      if (existingStatus !== 'granted') {
+        console.log('Requesting notification permissions...');
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+        console.log('New permission status:', status);
+      }
+      
+      if (finalStatus !== 'granted') {
+        console.log('❌ Notification permissions not granted:', finalStatus);
+        Alert.alert('Permission Required', 'Please enable notifications in your device settings.');
+        return false;
+      }
 
-    // Register background task
-    await registerBackgroundNotificationTask();
+      console.log('✅ Notification permissions granted');
 
-    // Set up notification listeners
-    this.notificationListener = Notifications.addNotificationReceivedListener(this.handleNotificationReceived);
-    this.responseListener = Notifications.addNotificationResponseReceivedListener(this.handleNotificationResponse);
+      // Set up notification listeners
+      this.notificationListener = Notifications.addNotificationReceivedListener(this.handleNotificationReceived);
+      this.responseListener = Notifications.addNotificationResponseReceivedListener(this.handleNotificationResponse);
+      
+      console.log('✅ Notification service initialized successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Error initializing notifications:', error);
+      return false;
+    }
   }
 
   // Handle when notification is received (app in foreground)
   handleNotificationReceived = (notification) => {
-    console.log('Notification received:', notification);
+    console.log('📱 Notification received in foreground:', notification);
+    console.log('📱 Notification content:', notification.request.content);
     this.saveNotificationToDatabase(notification.request.content.data);
   }
 
   // Handle when user taps on notification
   handleNotificationResponse = (response) => {
-    console.log('Notification response:', response);
+    console.log('👆 Notification tapped:', response);
     const data = response.notification.request.content.data;
-    
-    // Navigate to appropriate screen based on notification type
-    if (data.eventId) {
-      // Navigate to event details or notifications screen
-      // This will be handled by the app navigation
-    }
+    this.saveNotificationToDatabase(data);
   }
 
   // Save notification to database
   async saveNotificationToDatabase(notificationData) {
     try {
+      console.log('💾 Saving notification to database:', notificationData);
       const notificationsRef = ref(database, 'notifications');
       const newNotificationRef = push(notificationsRef);
       
@@ -77,94 +88,121 @@ class NotificationService {
         type: 'event_reminder'
       });
 
-      console.log('Notification saved to database');
+      console.log('✅ Notification saved to database');
     } catch (error) {
-      console.error('Error saving notification to database:', error);
+      console.error('❌ Error saving notification to database:', error);
+    }
+  }
+
+  // Send immediate notification for testing
+  async sendImmediateNotification() {
+    try {
+      console.log('🚀 Sending immediate notification...');
+      
+      const notificationId = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Test Notification',
+          body: 'Your test event is just around the corner. Please make sure your outfit is ready on time.',
+          sound: true,
+          data: {
+            eventId: 'immediate-test',
+            eventName: 'Immediate Test Event',
+            message: 'Your test event is just around the corner. Please make sure your outfit is ready on time.',
+            type: 'immediate-test'
+          },
+        },
+        trigger: null, // Immediate notification
+      });
+
+      console.log('✅ Immediate notification sent with ID:', notificationId);
+      return true;
+    } catch (error) {
+      console.error('❌ Error sending immediate notification:', error);
+      return false;
     }
   }
 
   // Schedule a notification for an event
   async scheduleEventNotification(eventId, eventName, notificationTime, message) {
     try {
+      console.log('⏰ Scheduling notification for:', notificationTime);
       const trigger = new Date(notificationTime);
       
-      await Notifications.scheduleNotificationAsync({
+      const customMessage = message || `Your ${eventName} event is just around the corner. Please make sure your outfit is ready on time.`;
+      
+      const notificationId = await Notifications.scheduleNotificationAsync({
         content: {
           title: 'Event Reminder',
-          body: message || `⏰ Your event "${eventName}" is approaching! Get ready.`,
+          body: customMessage,
           sound: true,
           data: {
             eventId,
             eventName,
-            message,
+            message: customMessage,
             type: 'event_reminder'
           },
         },
         trigger,
       });
 
-      console.log('Event notification scheduled for:', trigger);
+      console.log('✅ Event notification scheduled for:', trigger.toLocaleString());
+      console.log('✅ Notification ID:', notificationId);
       return true;
     } catch (error) {
-      console.error('Error scheduling notification:', error);
+      console.error('❌ Error scheduling notification:', error);
       return false;
-    }
-  }
-
-  // Cancel a scheduled notification
-  async cancelNotification(notificationId) {
-    try {
-      await Notifications.cancelScheduledNotificationAsync(notificationId);
-      console.log('Notification cancelled:', notificationId);
-    } catch (error) {
-      console.error('Error cancelling notification:', error);
-    }
-  }
-
-  // Cancel all scheduled notifications
-  async cancelAllNotifications() {
-    try {
-      await Notifications.cancelAllScheduledNotificationsAsync();
-      console.log('All notifications cancelled');
-    } catch (error) {
-      console.error('Error cancelling all notifications:', error);
-    }
-  }
-
-  // Get all scheduled notifications
-  async getScheduledNotifications() {
-    try {
-      const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
-      return scheduledNotifications;
-    } catch (error) {
-      console.error('Error getting scheduled notifications:', error);
-      return [];
     }
   }
 
   // Test notification function (for development)
   async sendTestNotification() {
     try {
-      await Notifications.scheduleNotificationAsync({
+      console.log('🧪 Sending test notification...');
+      
+      const notificationId = await Notifications.scheduleNotificationAsync({
         content: {
           title: 'Test Notification',
-          body: 'This is a test notification to verify the system is working!',
+          body: 'Your test event is just around the corner. Please make sure your outfit is ready on time.',
           sound: true,
           data: {
             eventId: 'test',
             eventName: 'Test Event',
-            message: 'Test notification',
+            message: 'Your test event is just around the corner. Please make sure your outfit is ready on time.',
             type: 'test'
           },
         },
         trigger: { seconds: 5 }, // Send after 5 seconds
       });
 
-      console.log('Test notification scheduled');
+      console.log('✅ Test notification scheduled with ID:', notificationId);
       return true;
     } catch (error) {
-      console.error('Error sending test notification:', error);
+      console.error('❌ Error sending test notification:', error);
       return false;
+    }
+  }
+
+  // Debug function to check scheduled notifications
+  async debugScheduledNotifications() {
+    try {
+      const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
+      console.log('📋 Currently scheduled notifications:', scheduledNotifications);
+      return scheduledNotifications;
+    } catch (error) {
+      console.error('❌ Error getting scheduled notifications:', error);
+      return [];
+    }
+  }
+
+  // Check notification permissions
+  async checkPermissions() {
+    try {
+      const { status } = await Notifications.getPermissionsAsync();
+      console.log('📱 Current permission status:', status);
+      return status;
+    } catch (error) {
+      console.error('❌ Error checking permissions:', error);
+      return 'unknown';
     }
   }
 
@@ -176,9 +214,6 @@ class NotificationService {
     if (this.responseListener) {
       Notifications.removeNotificationSubscription(this.responseListener);
     }
-    
-    // Unregister background task
-    unregisterBackgroundNotificationTask();
   }
 }
 

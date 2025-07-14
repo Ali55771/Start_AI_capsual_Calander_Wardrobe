@@ -9,6 +9,7 @@ import { Picker } from '@react-native-picker/picker';
 import { doc, setDoc } from 'firebase/firestore';
 import { getFirestore } from 'firebase/firestore';
 import { LinearGradient } from 'expo-linear-gradient';
+import BottomNav from '../components/BottomNav';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -181,6 +182,7 @@ const ProfileScreen = () => {
             <Text style={[styles.sheetButtonText, { color: '#c75e5e' }]}>Cancel</Text>
           </TouchableOpacity>
         </RBSheet>
+        <BottomNav />
       </SafeAreaView>
     </LinearGradient>
   );

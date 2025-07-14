@@ -45,7 +45,7 @@ const IntroScreen = () => {
           <Pressable
             onPressIn={onPressIn}
             onPressOut={onPressOut}
-            onPress={() => navigation.navigate('SelectionScreen')}
+            onPress={() => navigation.navigate('MainScreen')}
           >
             <Animated.View style={[styles.buttonContainer, { transform: [{ scale: scaleAnim }] }]}>
               <LinearGradient

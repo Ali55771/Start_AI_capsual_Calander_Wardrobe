@@ -6,6 +6,7 @@ import { getDatabase, ref, onValue, remove } from 'firebase/database';
 import { getAuth } from 'firebase/auth';
 import { router } from 'expo-router';
 import { useNavigation } from 'expo-router';
+import BottomNav from '../components/BottomNav';
 
 
 const FavoriteOutfitCard = ({ outfit, onDelete }) => (
@@ -103,6 +104,7 @@ export default function FavoritesScreen() {
           contentContainerStyle={styles.listContainer}
         />
       )}
+      <BottomNav />
     </LinearGradient>
   );
 }

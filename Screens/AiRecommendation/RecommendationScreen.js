@@ -1,141 +1,86 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Image, Pressable, ActivityIndicator, Alert, Animated } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, Pressable, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getDatabase, ref, onValue, push } from 'firebase/database';
+import { getDatabase, ref, push, remove } from 'firebase/database';
 import { getAuth } from 'firebase/auth';
 
-const OutfitCard = ({ item, type, fadeAnim }) => (
-  <Animated.View style={[styles.card, { opacity: fadeAnim }]}>
-    <Image source={{ uri: item.imageUrl }} style={styles.cardImage} />
-    <View style={styles.cardOverlay} />
-    <Text style={styles.cardType}>{type}</Text>
-  </Animated.View>
+const API_URL = 'http://10.211.0.225:5000'; // Make sure this IP is correct
+
+function sanitizeKeys(obj) {
+  const newObj = {};
+  Object.keys(obj).forEach(key => {
+    const safeKey = key.replace(/[.#$\[\]/]/g, '_');
+    newObj[safeKey] = obj[key];
+  });
+  return newObj;
+}
+
+const DetailRow = ({ label, value }) => (
+    <View style={styles.detailRow}>
+        <Text style={styles.detailLabel}>{label.replace(/_/g, ' ')}</Text>
+        <Text style={styles.detailValue}>{value}</Text>
+    </View>
 );
 
 export default function RecommendationScreen({ navigation, route }) {
-  const { city, event, dressType, weather } = route.params;
-  const [allTops, setAllTops] = useState([]);
-  const [allPants, setAllPants] = useState([]);
-  const [allShoes, setAllShoes] = useState([]);
-  const [recommendedOutfit, setRecommendedOutfit] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const { recommendations: initialRecommendations } = route.params;
+  const [recommendations, setRecommendations] = useState(initialRecommendations.map(rec => ({ ...rec, status: 'pending' })));
 
-  useEffect(() => {
-    const auth = getAuth();
-    const user = auth.currentUser;
-    if (!user) {
-      setLoading(false);
+  const sendFeedback = async (outfit, feedback) => {
+    try {
+      // Remove status before sending
+      const { status, ...outfitData } = outfit;
+      await fetch(`${API_URL}/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ outfit: outfitData, feedback }),
+      });
+    } catch (error) {
+      console.error('Failed to send feedback:', error);
+      Alert.alert('Error', 'Could not send feedback to the server.');
+    }
+  };
+
+  const handleReject = (outfitToReject, index) => {
+    sendFeedback(outfitToReject, 'rejected');
+    setRecommendations(current => current.filter((_, i) => i !== index));
+  };
+
+  const handleAccept = (outfitToAccept, index) => {
+    sendFeedback(outfitToAccept, 'accepted');
+    setRecommendations(current => 
+      current.map((outfit, i) => (i === index ? { ...outfit, status: 'accepted' } : outfit))
+    );
+  };
+
+  // Add this function to save accepted suggestions to Firebase
+  const handleSaveSuggestions = async () => {
+    const accepted = recommendations.filter(r => r.status === 'accepted');
+    if (accepted.length === 0) {
+      Alert.alert('No Suggestions', 'Please accept at least one suggestion to save.');
       return;
     }
-    const db = getDatabase();
-
-    const seedAndSetState = () => {
-      const dummyData = {
-        Tops: [
-          { imageUrl: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=500&q=80', name: 'Stylish Tee' },
-          { imageUrl: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=500&q=80', name: 'Classic Black' },
-          { imageUrl: 'https://images.unsplash.com/photo-1622470953794-34503b4ab8a9?w=500&q=80', name: 'Casual Shirt' }
-        ],
-        Pants: [
-          { imageUrl: 'https://images.unsplash.com/photo-1602293589914-9e296ba2a7c4?w=500&q=80', name: 'Denim Jeans' },
-          { imageUrl: 'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=500&q=80', name: 'Khaki Trousers' },
-          { imageUrl: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=500&q=80', name: 'Slim-fit Pants' }
-        ],
-        Shoes: [
-          { imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ab?w=500&q=80', name: 'Running Shoes' },
-          { imageUrl: 'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=500&q=80', name: 'Leather Boots' },
-          { imageUrl: 'https://images.unsplash.com/photo-1603808033192-082d6919d3e1?w=500&q=80', name: 'White Sneakers' }
-        ]
-      };
-
-      Object.keys(dummyData).forEach(category => {
-        dummyData[category].forEach(item => {
-          push(ref(db, `wardrobe/${user.uid}/${category}`), item);
-        });
-      });
-
-      setAllTops(dummyData.Tops);
-      setAllPants(dummyData.Pants);
-      setAllShoes(dummyData.Shoes);
-      Alert.alert("Welcome!", "We've added some sample items to your wardrobe to get you started.");
-      setLoading(false);
-    };
-
-    const fetchWardrobe = () => {
-      const categories = { Tops: setAllTops, Pants: setAllPants, Shoes: setAllShoes };
-      let fetchedCount = 0;
-      Object.keys(categories).forEach(category => {
-        const wardrobeRef = ref(db, `wardrobe/${user.uid}/${category}`);
-        onValue(wardrobeRef, (snapshot) => {
-          const data = snapshot.val();
-          categories[category](data ? Object.values(data) : []);
-          fetchedCount++;
-          if (fetchedCount === Object.keys(categories).length) {
-            setLoading(false);
-          }
-        }, { onlyOnce: true });
-      });
-    };
-
-    onValue(ref(db, `wardrobe/${user.uid}`), (snapshot) => {
-      if (snapshot.exists()) {
-        fetchWardrobe();
-      } else {
-        seedAndSetState();
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) {
+        Alert.alert('Error', 'User not logged in.');
+        return;
       }
-    }, { onlyOnce: true });
-  }, []);
-
-  useEffect(() => {
-    if (!loading) {
-      generateRecommendation();
+      const db = getDatabase();
+      const userSuggestionsRef = ref(db, `savedSuggestions/${user.uid}`);
+      // Remove all previous saved suggestions before saving new ones
+      await remove(userSuggestionsRef);
+      for (const suggestion of accepted) {
+        await push(userSuggestionsRef, sanitizeKeys(suggestion));
+      }
+      Alert.alert('Success', 'Your suggestion saved successfully!');
+    } catch (error) {
+      console.log('Firebase save error:', error);
+      Alert.alert('Error', 'Failed to save suggestions.');
     }
-  }, [loading]);
-
-  const generateRecommendation = () => {
-    if (allTops.length === 0 || allPants.length === 0 || allShoes.length === 0) {
-      Alert.alert("Not Enough Clothes", "Please add at least one item to each category (Tops, Pants, Shoes) to get a recommendation.");
-      return;
-    }
-
-    setGenerating(true);
-    fadeAnim.setValue(0);
-
-    setTimeout(() => {
-      const top = allTops[Math.floor(Math.random() * allTops.length)];
-      const pant = allPants[Math.floor(Math.random() * allPants.length)];
-      const shoe = allShoes[Math.floor(Math.random() * allShoes.length)];
-      setRecommendedOutfit({ top, pant, shoe });
-      setGenerating(false);
-      Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
-    }, 1000);
   };
-
-  const handleSaveToFavorites = () => {
-    if (!recommendedOutfit) return;
-
-    const auth = getAuth();
-    const user = auth.currentUser;
-    if (!user) return;
-
-    const db = getDatabase();
-    const favoritesRef = ref(db, `favorites/${user.uid}`);
-    
-    push(favoritesRef, { ...recommendedOutfit, recommendedFor: { city, event, dressType, weather } })
-      .then(() => {
-        Alert.alert('Saved!', 'This outfit has been saved to your favorites.');
-      })
-      .catch(error => {
-        Alert.alert('Error', 'Failed to save outfit. Please try again.');
-      });
-  };
-
-  if (loading) {
-    return <LinearGradient colors={['#2c1d1a', '#4a302d']} style={styles.center}><ActivityIndicator size="large" color="#FFFFFF" /><Text style={styles.loadingText}>Loading your wardrobe...</Text></LinearGradient>;
-  }
 
   return (
     <LinearGradient colors={['#2c1d1a', '#4a302d']} style={styles.container}>
@@ -143,37 +88,61 @@ export default function RecommendationScreen({ navigation, route }) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={28} color="white" />
         </TouchableOpacity>
-        <Text style={styles.title}>Your Perfect Outfit</Text>
+        <Text style={styles.title}>Our Suggestions For You</Text>
         <View style={{ width: 28 }} />
       </View>
 
-      <View style={styles.content}>
-        {generating ? (
-          <View style={styles.center}><ActivityIndicator size="large" color="#C4704F" /><Text style={styles.generatingText}>Generating your perfect outfit...</Text></View>
-        ) : recommendedOutfit ? (
-          <View style={styles.outfitContainer}>
-            <OutfitCard item={recommendedOutfit.top} type="Top" fadeAnim={fadeAnim} />
-            <OutfitCard item={recommendedOutfit.pant} type="Pant" fadeAnim={fadeAnim} />
-            <OutfitCard item={recommendedOutfit.shoe} type="Shoe" fadeAnim={fadeAnim} />
-          </View>
-        ) : (
-          <View style={styles.center}>
-            <Text style={styles.generatingText}>No items in wardrobe to recommend.</Text>
-            <Pressable onPress={() => navigation.navigate('AddClothing')} style={({ pressed }) => [styles.button, styles.primaryButton, {marginTop: 20}, pressed && styles.buttonPressed]}>
-                <Text style={styles.buttonText}>Add Clothes</Text>
-            </Pressable>
-          </View>
-        )}
-      </View>
+      <ScrollView contentContainerStyle={styles.content}>
+        {recommendations.map((outfit, index) => {
+          // Filter out details that are not applicable
+          const outfitDetails = Object.entries(outfit).filter(([key, value]) => 
+            key !== 'status' && value && value.toLowerCase() !== 'n/a' && value.toLowerCase() !== 'not required'
+          );
+
+          return (
+            <LinearGradient 
+                key={index}
+                colors={outfit.status === 'accepted' ? ['#2E4B3D', '#1A2920'] : ['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']}
+                style={[styles.detailsContainer, outfit.status === 'accepted' && styles.acceptedCard]}
+            >
+                <Text style={styles.recommendationTitle}>{`Suggestion #${index + 1}`}</Text>
+                {outfitDetails.map(([key, value]) => (
+                    <DetailRow key={key} label={key} value={value} />
+                ))}
+
+                {outfit.status === 'pending' && (
+                  <View style={styles.actionButtonsContainer}>
+                    <TouchableOpacity style={[styles.actionButton, styles.rejectButton]} onPress={() => handleReject(outfit, index)}>
+                      <Ionicons name="close" size={24} color="#FFFFFF" />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.actionButton, styles.acceptButton]} onPress={() => handleAccept(outfit, index)}>
+                      <Ionicons name="checkmark" size={24} color="#FFFFFF" />
+                    </TouchableOpacity>
+                  </View>
+                )}
+                {outfit.status === 'accepted' && (
+                    <View style={styles.acceptedIndicator}>
+                        <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
+                        <Text style={styles.acceptedText}>Accepted</Text>
+                    </View>
+                )}
+            </LinearGradient>
+          );
+        })}
+      </ScrollView>
 
       <View style={styles.footer}>
-        <Pressable onPress={generateRecommendation} disabled={generating} style={({ pressed }) => [styles.button, styles.secondaryButton, pressed && styles.buttonPressed, generating && styles.disabledButton]}>
-          <Ionicons name="refresh" size={22} color="#C4704F" />
-          <Text style={[styles.buttonText, styles.secondaryButtonText]}>Try Again</Text>
+        <Pressable onPress={() => navigation.goBack()} style={({ pressed }) => [styles.button, styles.primaryButton, pressed && styles.buttonPressed]}>
+          <Ionicons name="refresh" size={22} color="#FFFFFF" />
+          <Text style={styles.buttonText}>Try Another</Text>
         </Pressable>
-        <Pressable onPress={handleSaveToFavorites} disabled={generating || !recommendedOutfit} style={({ pressed }) => [styles.button, styles.primaryButton, pressed && styles.buttonPressed, (generating || !recommendedOutfit) && styles.disabledButton]}>
-          <Ionicons name="heart" size={22} color="#FFFFFF" />
-          <Text style={styles.buttonText}>Save to Favorites</Text>
+        <Pressable
+          onPress={handleSaveSuggestions}
+          style={({ pressed }) => [styles.button, styles.secondaryButton, pressed && styles.buttonPressed, { marginLeft: 10, opacity: recommendations.some(r => r.status === 'accepted') ? 1 : 0.5 }]}
+          disabled={!recommendations.some(r => r.status === 'accepted')}
+        >
+          <Ionicons name="save" size={22} color="#FFFFFF" />
+          <Text style={styles.buttonText}>Save Suggestions</Text>
         </Pressable>
       </View>
     </LinearGradient>
@@ -182,24 +151,111 @@ export default function RecommendationScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 50, paddingBottom: 20, paddingHorizontal: 20 },
   backButton: { padding: 5 },
-  title: { fontSize: 22, fontWeight: 'bold', color: '#FFFFFF' },
-  content: { flex: 1, justifyContent: 'center', paddingHorizontal: 20 },
-  outfitContainer: { alignItems: 'center', justifyContent: 'space-around', height: '85%' },
-  card: { width: '90%', height: '28%', borderRadius: 20, overflow: 'hidden', justifyContent: 'flex-end', elevation: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.3, shadowRadius: 5 },
-  cardImage: { position: 'absolute', width: '100%', height: '100%' },
-  cardOverlay: { position: 'absolute', width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.2)' },
-  cardType: { color: 'white', fontSize: 24, fontWeight: 'bold', padding: 15, textShadowColor: 'rgba(0, 0, 0, 0.75)', textShadowOffset: { width: -1, height: 1 }, textShadowRadius: 10 },
-  loadingText: { color: '#FFFFFF', marginTop: 15, fontSize: 16 },
-  generatingText: { color: '#FFFFFF', marginTop: 15, fontSize: 16, textAlign: 'center' },
-  footer: { flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: 20, paddingBottom: 40, paddingTop: 10 },
-  button: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 15, paddingHorizontal: 25, borderRadius: 15, width: '48%' },
+  title: { fontSize: 22, fontWeight: 'bold', color: '#FFFFFF', textAlign: 'center' },
+  content: { flexGrow: 1, padding: 20 },
+  detailsContainer: {
+    padding: 25,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    marginBottom: 20, // Add space between cards
+  },
+  acceptedCard: {
+    borderColor: '#4CAF50',
+    borderWidth: 1,
+  },
+  recommendationTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.2)',
+    paddingBottom: 10,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  detailLabel: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 16,
+    fontWeight: '500',
+    textTransform: 'capitalize',
+  },
+  detailValue: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'right',
+    flexShrink: 1,
+    marginLeft: 10,
+  },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 15,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  actionButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  acceptButton: {
+    backgroundColor: 'rgba(76, 175, 80, 0.8)',
+  },
+  rejectButton: {
+    backgroundColor: 'rgba(244, 67, 54, 0.8)',
+  },
+  acceptedIndicator: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 15,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(76, 175, 80, 0.3)',
+  },
+  acceptedText: {
+    color: '#4CAF50',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 10,
+  },
+  footer: { 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    paddingHorizontal: 20, 
+    paddingBottom: 40, 
+    paddingTop: 10 
+  },
+  button: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    paddingVertical: 18, 
+    borderRadius: 15, 
+    width: '80%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 8,
+  },
   buttonPressed: { transform: [{ scale: 0.98 }], opacity: 0.9 },
   primaryButton: { backgroundColor: '#C4704F' },
-  secondaryButton: { backgroundColor: 'transparent', borderWidth: 2, borderColor: '#C4704F' },
   buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold', marginLeft: 10 },
-  secondaryButtonText: { color: '#C4704F' },
-  disabledButton: { opacity: 0.5 },
+  secondaryButton: { backgroundColor: '#4CAF50' },
 });

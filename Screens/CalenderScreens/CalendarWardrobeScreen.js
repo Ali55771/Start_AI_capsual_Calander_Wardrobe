@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getDatabase, ref, onValue, update } from 'firebase/database';
 import { getAuth } from 'firebase/auth';
+import BottomNav from '../../components/BottomNav';
 
 export default function CalendarWardrobeScreen({ navigation, route }) {
   const { eventId, eventDate } = route.params;
@@ -99,30 +100,32 @@ export default function CalendarWardrobeScreen({ navigation, route }) {
   }
 
   return (
-    <LinearGradient colors={['#2c1d1a', '#4a302d']} style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={28} color="white" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Select Outfit</Text>
-        <View style={{ width: 28 }} />
-      </View>
-
-      <FlatList
-        data={[
-          { title: 'Tops', data: tops, selected: selectedTop, setter: setSelectedTop },
-          { title: 'Pants', data: pants, selected: selectedPant, setter: setSelectedPant },
-          { title: 'Shoes', data: shoes, selected: selectedShoe, setter: setSelectedShoe },
-        ]}
-        renderItem={({ item }) => renderCategory(item.title, item.data, item.selected, item.setter)}
-        keyExtractor={item => item.title}
-        ListFooterComponent={
-          <Pressable onPress={handleSaveOutfit} style={({ pressed }) => [styles.saveButton, pressed && styles.saveButtonPressed]}>
-            <Text style={styles.saveButtonText}>Save Outfit</Text>
-          </Pressable>
-        }
-      />
-    </LinearGradient>
+    <View style={{ flex: 1, paddingBottom: 65, backgroundColor: '#2c1d1a' }}>
+      <LinearGradient colors={['#2c1d1a', '#4a302d']} style={{ flex: 1 }}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={28} color="white" />
+          </TouchableOpacity>
+          <Text style={styles.title}>Select Outfit</Text>
+          <View style={{ width: 28 }} />
+        </View>
+        <FlatList
+          data={[
+            { title: 'Tops', data: tops, selected: selectedTop, setter: setSelectedTop },
+            { title: 'Pants', data: pants, selected: selectedPant, setter: setSelectedPant },
+            { title: 'Shoes', data: shoes, selected: selectedShoe, setter: setSelectedShoe },
+          ]}
+          renderItem={({ item }) => renderCategory(item.title, item.data, item.selected, item.setter)}
+          keyExtractor={item => item.title}
+          ListFooterComponent={
+            <Pressable onPress={handleSaveOutfit} style={({ pressed }) => [styles.saveButton, pressed && styles.saveButtonPressed]}>
+              <Text style={styles.saveButtonText}>Save Outfit</Text>
+            </Pressable>
+          }
+        />
+      </LinearGradient>
+      <BottomNav />
+    </View>
   );
 }
 

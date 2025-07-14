@@ -4,26 +4,30 @@ import {
   Text,
   View,
   TouchableOpacity,
-  FlatList,
   SafeAreaView,
   Platform,
   TextInput,
   KeyboardAvoidingView,
-  Animated,
-  Pressable,
   LayoutAnimation,
   UIManager,
   ScrollView,
+  Modal,
+  ActivityIndicator,
+  Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Marker } from 'react-native-maps';
 import axios from 'axios';
-import { LinearGradient } from 'expo-linear-gradient';
 import Toast from 'react-native-toast-message';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
+
+// Configuration
+const API_URL = Platform.select({
+  ios: 'http://localhost:5000/recommend',
+  android: 'http://10.0.2.2:5000/recommend',
+});
 
 const API_KEYS = {
   OPENCAGE: '0b979ea8731646cca0a9a849b7473299',
@@ -31,120 +35,58 @@ const API_KEYS = {
 };
 
 const events = [
-  'Birth of a Child & Aqiqah Ceremony',
-  'Bismillah Ceremony & First Roza Celebration',
-  'School Admission Ceremony',
-  'Graduation Ceremony',
-  'Engagement (Mangni)',
-  'Mayun',
-  'Mehndi',
-  'Nikah',
-  'Rukhsati',
-  'Valima Reception',
-  'Funeral & Mourning (Janazah & Chehlum)',
-  'Pakistan Day',
-  'Independence Day',
-  'Defence Day',
-  'Eid-ul-Fitr & Eid-ul-Adha',
-  'Business Meetings & Presentations',
-  'Office Parties & Corporate Events',
-  'Casual Office Days & Work-from-Home',
-  'Casual Outing | Visiting Friends & Relatives',
+    'Aqiqa','Chehlum', 'Defence Day', 'Dholak', 'Barat', 'Mangni', 'Mayun', 
+    'Mehndi', 'Nikah', 'Pakistan Day', 'Qwali Night', 'Rukhsati', 'Valima Reception', 
+    'Walima', 'Graduation Ceremony', 'Independence Day', 'Bismillah Ceremony & First Roza Celebration', 
+    'Birth of a Child & Aqiqah Ceremony', 'Business Meetings & Presentations', 
+    'Casual Office Days & Work-from-Home', 'Casual Outing | Visiting Friends & Relatives', 
+    'Eid-ul-Fitr & Eid-ul-Adha', 'Engagement (Mangni)', 'Funeral & Mourning (Janazah & Chehlum)', 
+    'Office Parties & Corporate Events', 'School Admission Ceremony'
 ];
 
 const dressTypes = ['Formal', 'Casual'];
 
-const AnimatedInput = ({ label, placeholder, value, onChangeText, icon, delay = 0 }) => {
-  const anim = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.timing(anim, { toValue: 1, duration: 600, delay, useNativeDriver: true }).start();
-  }, []);
-
-  return (
-    <Animated.View style={[styles.inputGroup, { opacity: anim, transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
-      <Text style={styles.label}>{label}</Text>
-      <View style={styles.inputContainer}>
-        <Ionicons name={icon} size={20} color="rgba(255, 255, 255, 0.6)" />
-        <TextInput
-          style={styles.input}
-          placeholder={placeholder}
-          placeholderTextColor="rgba(255, 255, 255, 0.4)"
-          value={value}
-          onChangeText={onChangeText}
-        />
-      </View>
-    </Animated.View>
-  );
-};
-
-const CustomDropdown = ({ label, placeholder, value, data, onSelect, icon, delay = 0 }) => {
+// Reusable Dropdown Component
+const CustomDropdown = ({ icon, label, placeholder, items, selectedValue, onSelect }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const anim = useRef(new Animated.Value(0)).current;
-  const listAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.timing(anim, { toValue: 1, duration: 600, delay, useNativeDriver: true }).start();
-  }, []);
-
-  const toggleDropdown = () => {
-    const toValue = isOpen ? 0 : 1;
-    if (!isOpen) {
-      setIsOpen(true);
-    }
-    Animated.timing(listAnim, {
-      toValue,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      if (isOpen) {
-        setIsOpen(false);
-      }
-    });
-  };
-
-  const containerStyle = [
-    styles.inputGroup,
-    {
-      opacity: anim,
-      transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }],
-    },
-    isOpen && { zIndex: 1000 },
-  ];
-
-  const listContainerStyle = {
-    opacity: listAnim,
-    transform: [
-      {
-        scale: listAnim.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0.95, 1],
-        }),
-      },
-    ],
-  };
 
   return (
-    <Animated.View style={containerStyle}>
+    <View style={styles.inputGroup}>
       <Text style={styles.label}>{label}</Text>
-      <TouchableOpacity style={styles.inputContainer} onPress={toggleDropdown}>
-        <Ionicons name={icon} size={20} color="rgba(255, 255, 255, 0.6)" />
-        <Text style={[styles.input, { color: value ? '#fff' : 'rgba(255, 255, 255, 0.4)' }]}>
-          {value || placeholder}
+      <TouchableOpacity style={styles.inputContainer} onPress={() => setIsOpen(true)}>
+        <Ionicons name={icon} size={22} color="rgba(255,255,255,0.7)" style={styles.icon} />
+        <Text style={[styles.inputText, !selectedValue && styles.placeholderText]}>
+          {selectedValue || placeholder}
         </Text>
-        <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={20} color="rgba(255, 255, 255, 0.6)" />
+        <Ionicons name="chevron-down" size={22} color="rgba(255,255,255,0.7)" />
       </TouchableOpacity>
-      {isOpen && (
-        <Animated.View style={[styles.dropdownList, listContainerStyle]}>
-          <ScrollView nestedScrollEnabled={true}>
-            {data.map(item => (
-              <TouchableOpacity key={item} style={styles.dropdownItem} onPress={() => { onSelect(item); toggleDropdown(); }}>
-                <Text style={styles.dropdownItemText}>{item}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </Animated.View>
-      )}
-    </Animated.View>
+
+      <Modal
+        transparent={true}
+        visible={isOpen}
+        animationType="fade"
+        onRequestClose={() => setIsOpen(false)}
+      >
+        <TouchableOpacity style={styles.modalOverlay} onPress={() => setIsOpen(false)}>
+          <View style={styles.modalContent}>
+            <ScrollView>
+              {items.map((item, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.modalItem}
+                  onPress={() => {
+                    onSelect(item);
+                    setIsOpen(false);
+                  }}
+                >
+                  <Text style={styles.modalItemText}>{item}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </View>
   );
 };
 
@@ -152,38 +94,31 @@ const SelectionScreen = ({ navigation }) => {
   const [cityInput, setCityInput] = useState('');
   const [eventInput, setEventInput] = useState('');
   const [dressTypeInput, setDressTypeInput] = useState('');
-  const [location, setLocation] = useState(null);
+  const [timeInput, setTimeInput] = useState('');
+  const [genderInput, setGenderInput] = useState('');
   const [weather, setWeather] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const debounceTimeout = useRef(null);
-  const buttonScale = useRef(new Animated.Value(1)).current;
 
   const fetchCityCoordinates = async (city) => {
     try {
       const response = await axios.get(`https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(city)}&key=${API_KEYS.OPENCAGE}`);
       if (response.data.results?.length > 0) {
         const { lat, lng } = response.data.results[0].geometry;
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.spring);
-        setLocation({ latitude: lat, longitude: lng });
         fetchWeather(lat, lng);
       } else {
-        setLocation(null);
         setWeather(null);
       }
     } catch (error) {
       console.error('Error fetching location:', error.message);
-      setLocation(null);
       setWeather(null);
     }
   };
 
   useEffect(() => {
     if (cityInput.trim().length < 3) {
-      if (location) {
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        setLocation(null);
         setWeather(null);
-      }
-      return;
+        return;
     }
     if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
     debounceTimeout.current = setTimeout(() => fetchCityCoordinates(cityInput.trim()), 800);
@@ -193,6 +128,7 @@ const SelectionScreen = ({ navigation }) => {
   const fetchWeather = async (lat, lon) => {
     try {
       const response = await axios.get(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEYS.OPENWEATHER}`);
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setWeather({ description: response.data.weather[0].description, temperature: response.data.main.temp });
     } catch (error) {
       console.error('Error fetching weather:', error.message);
@@ -200,105 +136,241 @@ const SelectionScreen = ({ navigation }) => {
     }
   };
 
-  const handleGenerate = () => {
-    if (!cityInput || !eventInput || !dressTypeInput) {
-      Toast.show({ type: 'error', text1: 'Missing Fields', text2: 'Please fill all fields to get a recommendation.' });
+  const handleGenerate = async () => {
+    if (!cityInput || !genderInput || !eventInput || !timeInput || !dressTypeInput) {
+      Toast.show({ type: 'error', text1: 'Missing Information', text2: 'Please fill all the fields to continue.' });
       return;
     }
-    navigation.navigate('RecommendationScreen', { city: cityInput, event: eventInput, dressType: dressTypeInput, weather });
+    setIsLoading(true);
+    try {
+      // Correctly access the temperature from the weather state object
+      const temperature = weather ? Math.round(weather.temperature) : '25';
+
+      const payload = {
+        event: eventInput,
+        outfit: dressTypeInput,
+        time: timeInput,
+        gender: genderInput,
+        weather: String(temperature), // Ensure weather is sent as a string
+      };
+
+      console.log('Sending payload to API:', JSON.stringify(payload, null, 2));
+
+      const response = await axios.post(API_URL, payload);
+
+      // Check if the response is OK and data is a non-empty array
+      if (response.status === 200 && Array.isArray(response.data) && response.data.length > 0) {
+        navigation.navigate('RecommendationScreen', { recommendations: response.data });
+      } else {
+        // Handle cases where backend returns an empty array or an error message
+        const message = response.data?.error || 'We couldn\'t find recommendations for this criteria.';
+        Toast.show({ type: 'info', text1: 'No Results', text2: message });
+      }
+    } catch (error) {
+      // Differentiate between server errors and network errors
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error("API Server Error:", JSON.stringify(error.response.data, null, 2));
+        const errorMessage = error.response.data?.error || 'An unknown server error occurred.';
+        Toast.show({ type: 'error', text1: 'Server Error', text2: errorMessage });
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error("API Network Error:", error.request);
+        Toast.show({ type: 'error', text1: 'Network Error', text2: 'Could not connect to the server. Please check your connection.' });
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error('Request Setup Error:', error.message);
+        Toast.show({ type: 'error', text1: 'Error', text2: 'An unexpected error occurred.' });
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const onPressIn = () => Animated.spring(buttonScale, { toValue: 0.95, useNativeDriver: true }).start();
-  const onPressOut = () => Animated.spring(buttonScale, { toValue: 1, useNativeDriver: true }).start();
-
   return (
-    <LinearGradient colors={['#2c1d1a', '#4a302d']} style={{ flex: 1 }}>
-      <SafeAreaView style={styles.safeArea}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={28} color="#fff" />
           </TouchableOpacity>
-          <ScrollView
-            contentContainerStyle={styles.listContentContainer}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            <View style={styles.container}>
-              <Text style={styles.title}>Create Your Look</Text>
-              <AnimatedInput label="Location" placeholder="Enter your city" value={cityInput} onChangeText={setCityInput} icon="location-outline" delay={100} />
-              {location && (
-                <Animated.View style={styles.mapContainer}>
-                  <MapView style={styles.map} region={{ ...location, latitudeDelta: 0.05, longitudeDelta: 0.05 }}>
-                    <Marker coordinate={location} title={cityInput} pinColor="#C4704F" />
-                  </MapView>
-                  {weather && (
-                    <LinearGradient colors={['rgba(0,0,0,0.7)', 'transparent']} style={styles.weatherContainer}>
-                      <Text style={styles.weatherText}>{`${weather.description}, ${Math.round(weather.temperature)}°C`}</Text>
-                    </LinearGradient>
-                  )}
-                </Animated.View>
-              )}
-              <CustomDropdown label="Event Type" placeholder="Select an event" value={eventInput} data={events} onSelect={setEventInput} icon="calendar-outline" delay={200} />
-              <CustomDropdown label="Dress Code" placeholder="Select a dress type" value={dressTypeInput} data={dressTypes} onSelect={setDressTypeInput} icon="shirt-outline" delay={300} />
+          <Text style={styles.title}>Create Your Look</Text>
+        </View>
+
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Weather By Location</Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="location-outline" size={22} color="rgba(255,255,255,0.7)" style={styles.icon} />
+              <TextInput
+                style={styles.inputText}
+                placeholder="Enter your city"
+                placeholderTextColor="rgba(255,255,255,0.5)"
+                value={cityInput}
+                onChangeText={setCityInput}
+              />
             </View>
-          </ScrollView>
-          <View style={styles.footer}>
-            <Pressable onPressIn={onPressIn} onPressOut={onPressOut} onPress={handleGenerate}>
-              <Animated.View style={[styles.generateButton, { transform: [{ scale: buttonScale }] }]}>
-                <LinearGradient colors={['#C4704F', '#A05A3F']} style={styles.generateButtonGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-                  <Text style={styles.generateButtonText}>Generate</Text>
-                </LinearGradient>
-              </Animated.View>
-            </Pressable>
+            {weather && (
+                <Text style={styles.weatherText}>
+                    {`Weather: ${weather.description}, ${Math.round(weather.temperature)}°C`}
+                </Text>
+            )}
           </View>
-        </KeyboardAvoidingView>
-        <Toast />
-      </SafeAreaView>
-    </LinearGradient>
+
+          <CustomDropdown
+            icon="person-outline"
+            label="Gender"
+            placeholder="Select your gender"
+            items={['Male', 'Female']}
+            selectedValue={genderInput}
+            onSelect={setGenderInput}
+          />
+          <CustomDropdown
+            icon="calendar-outline"
+            label="Event Name"
+            placeholder="Select an event"
+            items={events}
+            selectedValue={eventInput}
+            onSelect={setEventInput}
+          />
+          <CustomDropdown
+            icon="time-outline"
+            label="Time"
+            placeholder="Select time"
+            items={['Day', 'Night']}
+            selectedValue={timeInput}
+            onSelect={setTimeInput}
+          />
+          <CustomDropdown
+            icon="shirt-outline"
+            label="Outfit Type"
+            placeholder="Select an Outfit type"
+            items={dressTypes}
+            selectedValue={dressTypeInput}
+            onSelect={setDressTypeInput}
+          />
+        </ScrollView>
+
+        <View style={styles.footer}>
+          <Pressable onPress={handleGenerate} disabled={isLoading} style={({ pressed }) => [styles.generateButton, pressed && styles.buttonPressed]}>
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#000" />
+            ) : (
+              <Text style={styles.generateButtonText}>Generate</Text>
+            )}
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
+      <Toast />
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  keyboardView: { flex: 1 },
-  container: { paddingHorizontal: 25, paddingTop: 60 },
-  listContentContainer: { flexGrow: 1, paddingBottom: 20 },
-  backButton: { position: 'absolute', top: Platform.OS === 'ios' ? 60 : 40, left: 20, zIndex: 100 },
-  title: { fontSize: 32, fontWeight: 'bold', color: '#fff', textAlign: 'center', marginBottom: 30 },
-  inputGroup: { marginBottom: 20, zIndex: 1 },
-  label: { color: 'rgba(255, 255, 255, 0.8)', fontSize: 16, marginBottom: 10, fontWeight: '500' },
-  inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRadius: 12, paddingHorizontal: 15, height: 55 },
-  input: { flex: 1, color: '#fff', fontSize: 16, marginLeft: 10 },
-  mapContainer: { borderRadius: 15, overflow: 'hidden', marginTop: 10, height: 180, backgroundColor: 'rgba(255, 255, 255, 0.1)' },
-  map: { ...StyleSheet.absoluteFillObject },
-  weatherContainer: { position: 'absolute', top: 0, left: 0, right: 0, padding: 15 },
-  weatherText: { color: '#fff', fontWeight: 'bold', fontSize: 16, textShadowColor: 'rgba(0, 0, 0, 0.75)', textShadowOffset: { width: -1, height: 1 }, textShadowRadius: 10 },
-  dropdownList: {
-    position: 'absolute',
-    top: '100%',
-    width: '100%',
-    backgroundColor: '#3a2a28',
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#1c1c1e',
+  },
+  container: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+  },
+  backButton: {
+    padding: 5,
+  },
+  title: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginLeft: 15,
+  },
+  scrollContent: {
+    paddingBottom: 20,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  label: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 14,
+    marginBottom: 8,
+    marginLeft: 5,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: 12,
-    marginTop: 8,
-    maxHeight: 250,
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    zIndex: 2000,
+    paddingHorizontal: 15,
+    height: 55,
   },
-  dropdownItem: { paddingVertical: 15, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: 'rgba(255, 255, 255, 0.1)' },
-  dropdownItemText: { color: '#fff', fontSize: 16 },
+  icon: {
+    marginRight: 10,
+  },
+  inputText: {
+    flex: 1,
+    color: '#fff',
+    fontSize: 16,
+  },
+  placeholderText: {
+    color: 'rgba(255,255,255,0.5)',
+  },
+  weatherText: {
+      color: 'rgba(255,255,255,0.8)',
+      marginTop: 8,
+      marginLeft: 5,
+      fontSize: 14,
+  },
   footer: {
-    paddingHorizontal: 25,
-    paddingTop: 10,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 30,
-    backgroundColor: '#2c1d1a' 
+    paddingVertical: 15,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.1)',
   },
-  generateButton: { borderRadius: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 10 },
-  generateButtonGradient: { paddingVertical: 18, alignItems: 'center', borderRadius: 12 },
-  generateButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  generateButton: {
+    backgroundColor: '#C4704F',
+    borderRadius: 12,
+    height: 55,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonPressed: {
+    opacity: 0.8,
+  },
+  generateButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#2c2c2e',
+    borderRadius: 15,
+    width: '85%',
+    maxHeight: '60%',
+    padding: 10,
+  },
+  modalItem: {
+    paddingVertical: 15,
+    paddingHorizontal: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
+  },
+  modalItemText: {
+    color: '#fff',
+    fontSize: 16,
+  },
 });
 
 export default SelectionScreen;

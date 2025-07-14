@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const CreatedWardrobesScreen = () => {
   const navigation = useNavigation();
@@ -10,8 +11,8 @@ const CreatedWardrobesScreen = () => {
   const wardrobes = ['Summer Wardrobe', 'Winter Wardrobe'];
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+    <LinearGradient colors={['#F5EADD', '#A0785A']} style={styles.container}>
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.8}>
         <Ionicons name="arrow-back" size={28} color="#A0785A" />
       </TouchableOpacity>
 
@@ -23,19 +24,19 @@ const CreatedWardrobesScreen = () => {
             key={index}
             style={styles.wardrobeButton}
             onPress={() => alert(`${wardrobe} opened!`)}
+            activeOpacity={0.8}
           >
             <Text style={styles.wardrobeButtonText}>{wardrobe}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
-    </View>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5EADD',
     paddingTop: 60,
     paddingHorizontal: 20,
   },

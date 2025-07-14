@@ -28,6 +28,7 @@ import IntroScreen from './Screens/AiRecommendation/IntroScreen';
 import SelectionScreen from './Screens/AiRecommendation/SelectionScreen';
 import RecommendationScreen from './Screens/AiRecommendation/RecommendationScreen';
 import FinalScreen from './Screens/AiRecommendation/FinalScreen';
+import MainScreen from './Screens/MainScreen';
 import GetStartScreen from './Screens/getStart';
 import CreateWardrobe from './Screens/createWardrobe';
 import AssignTags from './Screens/AssignTags';
@@ -54,6 +55,7 @@ const HomeStack = () => (
   <Stack.Navigator screenOptions={commonScreenOptions}>
     <Stack.Screen name="HomeScreen" component={HomeScreen} />
     <Stack.Screen name="IntroScreen" component={IntroScreen} />
+    <Stack.Screen name="MainScreen" component={MainScreen} />
     <Stack.Screen name="SelectionScreen" component={SelectionScreen} />
     <Stack.Screen name="RecommendationScreen" component={RecommendationScreen} />
     <Stack.Screen name="FinalScreen" component={FinalScreen} />

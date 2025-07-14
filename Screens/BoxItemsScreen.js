@@ -5,6 +5,7 @@ import { db } from '../config/firebaseConfig';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import BottomNav from '../components/BottomNav';
 
 const BoxItemsScreen = () => {
   const route = useRoute();
@@ -80,11 +81,34 @@ const BoxItemsScreen = () => {
           contentContainerStyle={styles.listContainer}
         />
       )}
+      <TouchableOpacity 
+        style={styles.fab}
+        onPress={() => navigation.navigate('AddClothingScreen', { wardrobeId, boxName })}
+      >
+        <Ionicons name="add" size={30} color="white" />
+      </TouchableOpacity>
+      <BottomNav />
     </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
+  fab: {
+    position: 'absolute',
+    width: 56,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    right: 20,
+    bottom: 90, // move above BottomNav
+    backgroundColor: '#A0785A',
+    borderRadius: 28,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowRadius: 5,
+    shadowOpacity: 0.3,
+    shadowOffset: { height: 2, width: 0 },
+  },
   container: {
     flex: 1,
     paddingTop: 80,

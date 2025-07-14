@@ -1,8 +1,9 @@
 import React, { useContext, useState, useEffect, useCallback } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Animated } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { UserContext } from "../context/UserContext";
+import { LinearGradient } from 'expo-linear-gradient';
 
 const WardrobeSetup = () => {
   const { user } = useContext(UserContext);
@@ -34,17 +35,16 @@ const WardrobeSetup = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <LinearGradient colors={['#F5EADD', '#A0785A']} style={styles.container}>
       <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={0.8}>
           <Ionicons name="arrow-back" size={26} color="#5E3A1D" />
         </TouchableOpacity>
         <Text style={styles.header}>My Wardrobe</Text>
-        <TouchableOpacity onPress={() => navigation.navigate("CreateWardrobe")} style={styles.plusButton}>
+        <TouchableOpacity onPress={() => navigation.navigate("CreateWardrobe")} style={styles.plusButton} activeOpacity={0.8}>
           <Ionicons name="add" size={26} color="#5E3A1D" />
         </TouchableOpacity>
       </View>
-
       <View style={styles.filterContainer}>
         <Text style={styles.filterLabel}>Select Season</Text>
         <View style={styles.filters}>
@@ -56,6 +56,7 @@ const WardrobeSetup = () => {
                 styles.filterButton,
                 selectedSeason === season && styles.selectedFilterButton,
               ]}
+              activeOpacity={0.8}
             >
               <Text
                 style={[
@@ -69,7 +70,6 @@ const WardrobeSetup = () => {
           ))}
         </View>
       </View>
-
       <FlatList
         data={filteredWardrobes}
         keyExtractor={(item, index) => index.toString()}
@@ -80,14 +80,13 @@ const WardrobeSetup = () => {
             ) : (
               <Text style={styles.itemText}>No Image Available</Text>
             )}
-
-            {/* Activate / Deactivate Button */}
             <TouchableOpacity
               style={[
                 styles.activateButton,
                 activeWardrobe?.id === item.id ? styles.activated : {},
               ]}
               onPress={() => toggleActivation(item)}
+              activeOpacity={0.8}
             >
               <Text style={styles.buttonText}>
                 {activeWardrobe?.id === item.id ? "Deactivate" : "Activate"}
@@ -97,8 +96,6 @@ const WardrobeSetup = () => {
         )}
         ListEmptyComponent={<Text style={styles.noItemsText}>No wardrobes available for this season</Text>}
       />
-
-      {/* Open Wardrobe Button */}
       <TouchableOpacity
         style={[styles.openWardrobeButton, !activeWardrobe && styles.disabledButton]}
         onPress={() => {
@@ -107,17 +104,17 @@ const WardrobeSetup = () => {
           }
         }}
         disabled={!activeWardrobe}
+        activeOpacity={0.8}
       >
         <Text style={styles.buttonText}>Open Wardrobe</Text>
       </TouchableOpacity>
-    </View>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8E7D0",
     alignItems: "center",
     justifyContent: "center",
   },

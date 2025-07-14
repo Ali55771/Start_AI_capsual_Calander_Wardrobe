@@ -13,30 +13,32 @@ import { Picker } from "@react-native-picker/picker";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { db } from "../config/firebaseConfig";
-import { doc, setDoc, updateDoc, getDocs, collection, query, where, addDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, getDocs, collection, query, where, addDoc } from "firebase/firestore";
 import { UserContext } from "../context/UserContext";
 
-export default function ClothingDetailsForm({ image }) {
+export default function ClothingDetailsForm({ image, wardrobeId, boxName }) {
   const navigation = useNavigation();
   const route = useRoute();
   const { item } = route.params || {};
   const { user } = useContext(UserContext);
   const userId = user?.uid;
 
+
   const [wardrobeOptions, setWardrobeOptions] = useState([]);
   const [boxOptions, setBoxOptions] = useState([]);
 
-  const [selectedWardrobe, setSelectedWardrobe] = useState("");
-  const [selectedBox, setSelectedBox] = useState(item?.selectedBox || "");
-  const [clothingType, setClothingType] = useState(item?.clothingType || "Shirt");
+  const [selectedWardrobe, setSelectedWardrobe] = useState(wardrobeId || "");
+  const [selectedBox, setSelectedBox] = useState(boxName || item?.selectedBox || "");
+  const [clothingType, setClothingType] = useState(item?.clothingType || "");
   const [outfitType, setOutfitType] = useState(item?.outfitType || "Casual");
 
   const [loading, setLoading] = useState(true);
-  const [customClothingType, setCustomClothingType] = useState("");  // For custom clothing input
-  const [Detail, setDetail] = useState("");  
-  const [Colour, setColour] = useState(""); // Allow user to input color
+  const [customClothingType, setCustomClothingType] = useState("");
+  
+  const [Detail, setDetail] = useState(item?.Detail || "");
+  const [Colour, setColour] = useState(item?.Colour || "");
 
-  const [showCustomField, setShowCustomField] = useState(true); // State to manage custom field visibility
+  const [showCustomField, setShowCustomField] = useState(true);
   const [stuff, setStuff] = useState(item?.stuff || "");
 
   const stuffOptions = [
@@ -72,16 +74,57 @@ export default function ClothingDetailsForm({ image }) {
     "Leather (Genuine / Faux) – لیدر / چمڑا (اصلی یا نقلی)",
   ];
 
-  // Fetch Wardrobes
+  // Box to clothing type mapping
+  const boxToClothingTypes = {
+    "Pants": ["Pant", "Trouser", "Jeans"],
+    "Shirts": ["Shirt", "T-Shirt", "Kurta"],
+    "Shoes": ["Shoe", "Sandal", "Sneaker"],
+    "Frocks": ["Frock", "Maxi"],
+    "Shalwar Kameez": ["Shalwar Kameez"],
+    "Jackets": ["Jacket", "Coat", "Blazer"],
+    // Add more mappings as needed
+  };
+
+  const clothingTypeOptions = selectedBox && boxToClothingTypes[selectedBox]
+    ? [...boxToClothingTypes[selectedBox], "custom"]
+    : ["Shirt", "Pant", "Shalwar Kameez", "Frocks", "Shoe", "Jacket", "custom"];
+
+  useEffect(() => {
+    if (selectedBox && boxToClothingTypes[selectedBox]) {
+      setClothingType(boxToClothingTypes[selectedBox][0] || "");
+    } else {
+      setClothingType("");
+    }
+  }, [selectedBox]);
+
+  useEffect(() => {
+    if (selectedBox && clothingType && clothingType !== 'custom') {
+      const allowedTypes = boxToClothingTypes[selectedBox];
+      if (allowedTypes && !allowedTypes.includes(clothingType)) {
+        Alert.alert(
+
+          "Invalid Selection",
+          `You can't select "${clothingType}" for the "${selectedBox}" box. Please choose a matching clothing type.`,
+          [{ text: "OK", onPress: () => setClothingType(allowedTypes[0] || "") }]
+        );
+      }
+    }
+  }, [clothingType, selectedBox]);
+
   useEffect(() => {
     const fetchWardrobes = async () => {
+      if (wardrobeId) {
+        setLoading(false);
+        return;
+      }
       if (!userId) return;
       setLoading(true);
       try {
         const q = query(collection(db, "wardrobes"), where("userId", "==", userId));
         const querySnapshot = await getDocs(q);
-        const wardrobes = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-        setWardrobeOptions(wardrobes);
+        const wardrobes = querySnapshot.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
+        const activeWardrobes = wardrobes.filter(w => w.isActive);
+        setWardrobeOptions(activeWardrobes);
       } catch (error) {
         console.error("Error fetching wardrobes: ", error);
         Alert.alert("Error", "Could not fetch wardrobes.");
@@ -90,16 +133,49 @@ export default function ClothingDetailsForm({ image }) {
       }
     };
     fetchWardrobes();
-  }, [userId]);
+  }, [userId, wardrobeId]);
 
-  // Save or Update in Firestore
+  useEffect(() => {
+    const fetchBoxes = async () => {
+      if (boxName) return;
+      if (!selectedWardrobe) {
+        setBoxOptions([]);
+        return;
+      }
+
+      const selectedW = wardrobeOptions.find((w) => w.id === selectedWardrobe);
+      if (selectedW && selectedW.labels) {
+        setBoxOptions(selectedW.labels);
+      } else if (selectedWardrobe) {
+        try {
+          const wardrobeDoc = await getDoc(doc(db, "wardrobes", selectedWardrobe));
+          if (wardrobeDoc.exists()) {
+            const wardrobeData = wardrobeDoc.data();
+            setBoxOptions(wardrobeData.labels || []);
+          }
+        } catch (error) {
+          console.error("Error fetching single wardrobe for boxes: ", error);
+        }
+      }
+    };
+    fetchBoxes();
+  }, [selectedWardrobe, wardrobeOptions, boxName]);
+
   const handleSave = async () => {
     if (!selectedWardrobe || !selectedBox || !clothingType || !outfitType || !stuff) {
       Alert.alert("Error", "All fields are required.");
       return;
     }
 
-    console.log("Saving clothing data:", JSON.stringify({ wardrobeId: selectedWardrobe, ...clothingData }, null, 2));
+    // Strict check: Only allow correct clothing type for selected box
+    const allowedTypes = boxToClothingTypes[selectedBox];
+    if (allowedTypes && !allowedTypes.includes(clothingType) && clothingType !== 'custom') {
+      Alert.alert(
+        "Invalid Clothing Type",
+        `Please select a valid clothing type for the "${selectedBox}" box. Allowed types are: ${allowedTypes.join(", ")}.`
+      );
+      return;
+    }
 
     const clothingData = {
       imageUrl: image || item?.imageUrl || "",
@@ -112,23 +188,27 @@ export default function ClothingDetailsForm({ image }) {
       timestamp: new Date(),
     };
 
+    console.log("Saving clothing data:", JSON.stringify({ wardrobeId: selectedWardrobe, ...clothingData }, null, 2));
+
     try {
-      const wardrobeId = selectedWardrobe;
+      const wardrobeDocId = selectedWardrobe;
 
       if (item && item.id) {
-        await updateDoc(
-          doc(db, "wardrobes", wardrobeId, "items", item.id),
-          clothingData
-        );
+        await updateDoc(doc(db, "wardrobes", wardrobeDocId, "items", item.id), clothingData);
       } else {
-        const clothingRef = collection(db, "wardrobes", wardrobeId, "items");
-        await addDoc(clothingRef, clothingData);
+        await addDoc(collection(db, "wardrobes", wardrobeDocId, "items"), clothingData);
       }
 
       Alert.alert("Success", `Clothing item ${item ? "updated" : "saved"} successfully!`, [
         {
           text: "OK",
-          onPress: () => navigation.navigate("HomeScreen"),
+          onPress: () => {
+            if (wardrobeId && boxName) {
+              navigation.goBack();
+            } else {
+              navigation.navigate("HomeScreen");
+            }
+          },
         },
       ]);
     } catch (error) {
@@ -137,28 +217,17 @@ export default function ClothingDetailsForm({ image }) {
     }
   };
 
-  // Fetch Boxes when a wardrobe is selected
-  useEffect(() => {
-    if (!selectedWardrobe) {
-      setBoxOptions([]);
-      return;
-    }
-    const selectedW = wardrobeOptions.find(w => w.id === selectedWardrobe);
-    if (selectedW && selectedW.labels) {
-      setBoxOptions(selectedW.labels);
-    }
-  }, [selectedWardrobe, wardrobeOptions]);
-
-  // Function to handle adding custom clothing type
   const handleAddCustomClothingType = () => {
     if (customClothingType && !outfitType.includes(customClothingType)) {
-      setOutfitType([...outfitType, customClothingType]); // Add custom clothing type to outfit list
-      setShowCustomField(false); // Hide the custom clothing type input field
-      setCustomClothingType(""); // Clear input field
+      setOutfitType([...outfitType, customClothingType]);
+      setShowCustomField(false);
+      setCustomClothingType("");
     } else {
       Alert.alert("Error", "Please enter a valid custom clothing type.");
     }
   };
+
+
 
   return (
     <View style={styles.container}>
@@ -166,48 +235,48 @@ export default function ClothingDetailsForm({ image }) {
         <ActivityIndicator size="large" color="#9B673E" />
       ) : (
         <>
-          {/* Wardrobe Picker */}
-          <View style={[styles.pickerContainer, Platform.OS === "ios" && styles.iosPicker]}>
-            <Picker selectedValue={selectedWardrobe} onValueChange={setSelectedWardrobe} style={styles.picker} mode="dropdown">
-              <Picker.Item label="Select Wardrobe" value="" />
-              {wardrobeOptions.map((wardrobe) => (
-                <Picker.Item key={wardrobe.id} label={wardrobe.wardrobeName} value={wardrobe.id} />
-              ))}
-            </Picker>
-          </View>
+          {!wardrobeId && (
+            <View style={[styles.pickerContainer, Platform.OS === "ios" && styles.iosPicker]}>
+              <Picker selectedValue={selectedWardrobe} onValueChange={setSelectedWardrobe} style={styles.picker} mode="dropdown">
+                <Picker.Item label="Select Wardrobe" value="" />
+                {wardrobeOptions.map((wardrobe) => (
+                  <Picker.Item key={wardrobe.id} label={wardrobe.name || wardrobe.wardrobeName || 'Unnamed Wardrobe'} value={wardrobe.id} />
+                ))}
+              </Picker>
+            </View>
+          )}
 
-          {/* Box Picker */}
-          <View style={[styles.pickerContainer, Platform.OS === "ios" && styles.iosPicker]}>
-            <Picker selectedValue={selectedBox} onValueChange={setSelectedBox} style={styles.picker} mode="dropdown" enabled={!!selectedWardrobe}>
-              <Picker.Item label="Select Box" value="" />
-              {boxOptions.map((box, index) => (
-                <Picker.Item key={index} label={box} value={box} />
-              ))}
-            </Picker>
-          </View>
+          {boxName ? (
+            <View style={styles.staticBoxContainer}>
+              <Text style={styles.staticBoxText}>Box: {boxName}</Text>
+            </View>
+          ) : (
+            <View style={[styles.pickerContainer, Platform.OS === "ios" && styles.iosPicker]}>
+              <Picker selectedValue={selectedBox} onValueChange={setSelectedBox} style={styles.picker} mode="dropdown" enabled={!!selectedWardrobe}>
+                <Picker.Item label="Select Box" value="" />
+                {boxOptions.map((box, index) => (
+                  <Picker.Item key={index} label={box} value={box} />
+                ))}
+              </Picker>
+            </View>
+          )}
 
-          {/* Clothing Type Picker */}
           <View style={[styles.pickerContainer, Platform.OS === "ios" && styles.iosPicker]}>
             <Picker selectedValue={clothingType} onValueChange={setClothingType} style={styles.picker} mode="dropdown">
               <Picker.Item label="Select Clothing Type" value="" />
-              <Picker.Item label="Shirt" value="Shirt" />
-              <Picker.Item label="Pants" value="Pants" />
-              <Picker.Item label="Shalwar Qamiz" value="Shalwar Qamiz" />
-              <Picker.Item label="Forks" value="Forks" />
-              <Picker.Item label="Shoe" value="Shoe" />
-              <Picker.Item label="Jacket" value="Jacket" />
-              <Picker.Item label="Custom Clothing Type" value="custom" />
+              {clothingTypeOptions.map(type => (
+                <Picker.Item key={type} label={type} value={type} />
+              ))}
             </Picker>
           </View>
 
-          {/* Custom Clothing Type Input */}
           {clothingType === "custom" && showCustomField && (
-            <View style={styles.pickerContainer}>
+            <View style={styles.customInputContainer}>
               <TextInput
                 placeholder="Enter custom clothing type"
                 value={customClothingType}
                 onChangeText={setCustomClothingType}
-                style={styles.input}
+                style={styles.customTextInput}
               />
               <TouchableOpacity style={styles.addButton} onPress={handleAddCustomClothingType}>
                 <Text style={styles.addButtonText}>Add</Text>
@@ -215,7 +284,6 @@ export default function ClothingDetailsForm({ image }) {
             </View>
           )}
 
-          {/* Detail Field */}
           {clothingType === "custom" && !showCustomField && (
             <View style={styles.pickerContainer}>
               <TextInput
@@ -227,7 +295,6 @@ export default function ClothingDetailsForm({ image }) {
             </View>
           )}
 
-          {/* Colour Field */}
           <View style={styles.pickerContainer}>
             <TextInput
               placeholder="Enter Colour"
@@ -237,7 +304,6 @@ export default function ClothingDetailsForm({ image }) {
             />
           </View>
 
-          {/* Outfit Type Picker */}
           <View style={[styles.pickerContainer, Platform.OS === "ios" && styles.iosPicker]}>
             <Picker selectedValue={outfitType} onValueChange={setOutfitType} style={styles.picker} mode="dropdown">
               <Picker.Item label="Select Outfit Type" value="" />
@@ -249,7 +315,6 @@ export default function ClothingDetailsForm({ image }) {
             </Picker>
           </View>
 
-          {/* Stuff Picker */}
           <View style={[styles.pickerContainer, Platform.OS === "ios" && styles.iosPicker]}>
             <Picker selectedValue={stuff} onValueChange={setStuff} style={styles.picker} mode="dropdown">
               <Picker.Item label="Select Stuff" value="" />
@@ -259,7 +324,6 @@ export default function ClothingDetailsForm({ image }) {
             </Picker>
           </View>
 
-          {/* Save Button */}
           <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
             <Ionicons name="save" size={20} color="white" />
             <Text style={styles.buttonText}>{item ? "Update Clothing Item" : "Save Clothing Item"}</Text>
@@ -271,6 +335,21 @@ export default function ClothingDetailsForm({ image }) {
 }
 
 const styles = StyleSheet.create({
+  staticBoxContainer: {
+    width: "85%",
+    height: 50,
+    justifyContent: "center",
+    paddingLeft: 15,
+    backgroundColor: "#F0F0F0",
+    borderRadius: 8,
+    marginVertical: 6,
+    borderWidth: 1,
+    borderColor: "#9B673E",
+  },
+  staticBoxText: {
+    fontSize: 16,
+    color: "#333",
+  },
   container: {
     width: "100%",
     alignItems: "center",
@@ -290,14 +369,26 @@ const styles = StyleSheet.create({
     height: 200,
   },
   input: {
-    width: "85%",
-    borderWidth: 1,
-    borderColor: "#9B673E",
-    borderRadius: 8,
+    flex: 1,
+    height: '100%',
+    paddingHorizontal: 10,
+    color: '#333',
+  },
+  customInputContainer: {
+    flexDirection: 'row',
+    width: '85%',
     marginVertical: 6,
-    backgroundColor: "#FFF",
-    height: 40,
+    alignItems: 'center',
+  },
+  customTextInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#9B673E',
+    borderRadius: 8,
+    backgroundColor: '#FFF',
+    height: 50,
     paddingLeft: 10,
+    marginRight: 10, // Add space between input and button
   },
   addButton: {
     backgroundColor: "#9B673E",
