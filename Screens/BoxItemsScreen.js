@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { db } from '../config/firebaseConfig';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, deleteDoc } from 'firebase/firestore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import BottomNav from '../components/BottomNav';
@@ -47,6 +47,32 @@ const BoxItemsScreen = () => {
     }
   }, [wardrobeId, boxName]);
 
+  const handleEdit = (item) => {
+    navigation.navigate('AddClothingScreen', { wardrobeId, boxName, item });
+  };
+
+  const handleDelete = async (itemId) => {
+    Alert.alert(
+      'Delete Item',
+      'Are you sure you want to delete this item?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Yes',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteDoc(doc(db, 'wardrobes', wardrobeId, 'items', itemId));
+              setItems(prev => prev.filter(i => i.id !== itemId));
+            } catch (error) {
+              console.error('Error deleting item:', error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const renderItem = ({ item }) => (
     <View style={styles.itemCard}>
       <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />
@@ -56,6 +82,16 @@ const BoxItemsScreen = () => {
         <Text style={styles.detailText}><Text style={styles.detailLabel}>Color:</Text> {item.Colour}</Text>
         <Text style={styles.detailText}><Text style={styles.detailLabel}>Material:</Text> {item.stuff}</Text>
         {item.Detail ? <Text style={styles.detailText}><Text style={styles.detailLabel}>Details:</Text> {item.Detail}</Text> : null}
+        <View style={styles.actionRow}>
+          <TouchableOpacity style={styles.editBtn} onPress={() => handleEdit(item)}>
+            <Ionicons name="create-outline" size={22} color="#6B4F4B" />
+            <Text style={styles.actionText}>Edit</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(item.id)}>
+            <Ionicons name="trash-outline" size={22} color="#A0785A" />
+            <Text style={styles.actionText}>Delete</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -166,6 +202,30 @@ const styles = StyleSheet.create({
   },
   itemDetails: {
     flex: 1,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    marginTop: 10,
+  },
+  editBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 15,
+    padding: 5,
+    backgroundColor: '#F5EADD',
+    borderRadius: 8,
+  },
+  deleteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 5,
+    backgroundColor: '#FDEDEC',
+    borderRadius: 8,
+  },
+  actionText: {
+    marginLeft: 5,
+    fontSize: 15,
+    color: '#6B4F4B',
   },
   detailText: {
     fontSize: 16,

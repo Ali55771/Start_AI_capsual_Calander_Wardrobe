@@ -23,10 +23,13 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-// Configuration
+// IMPORTANT: Set your computer's local IP address below for real device testing
+// Find your IP using 'ipconfig' (Windows) or 'ifconfig' (Mac/Linux)
+const LOCAL_IP = '192.168.1.5'; // <-- CHANGE THIS TO YOUR COMPUTER'S LOCAL IP
 const API_URL = Platform.select({
   ios: 'http://localhost:5000/recommend',
-  android: 'http://10.0.2.2:5000/recommend',
+  android: __DEV__ ? 'http://10.0.2.2:5000/recommend' : `http://${LOCAL_IP}:5000/recommend`,
+  default: `http://${LOCAL_IP}:5000/recommend`,
 });
 
 const API_KEYS = {
@@ -172,12 +175,12 @@ const SelectionScreen = ({ navigation }) => {
         // The request was made and the server responded with a status code
         // that falls out of the range of 2xx
         console.error("API Server Error:", JSON.stringify(error.response.data, null, 2));
-        const errorMessage = error.response.data?.error || 'An unknown server error occurred.';
+        const errorMessage = error.response.data?.error || 'An unknown server error occurred. Please check if the backend server is running and reachable.';
         Toast.show({ type: 'error', text1: 'Server Error', text2: errorMessage });
       } else if (error.request) {
         // The request was made but no response was received
         console.error("API Network Error:", error.request);
-        Toast.show({ type: 'error', text1: 'Network Error', text2: 'Could not connect to the server. Please check your connection.' });
+        Toast.show({ type: 'error', text1: 'Network Error', text2: 'Could not connect to the server. Please check your connection and make sure the backend is running.' });
       } else {
         // Something happened in setting up the request that triggered an Error
         console.error('Request Setup Error:', error.message);

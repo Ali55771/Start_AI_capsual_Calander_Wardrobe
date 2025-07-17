@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Pressable, ScrollView, Alert } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Pressable, ScrollView, Alert, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getDatabase, ref, push, remove } from 'firebase/database';
@@ -96,7 +96,7 @@ export default function RecommendationScreen({ navigation, route }) {
         {recommendations.map((outfit, index) => {
           // Filter out details that are not applicable
           const outfitDetails = Object.entries(outfit).filter(([key, value]) => 
-            key !== 'status' && value && value.toLowerCase() !== 'n/a' && value.toLowerCase() !== 'not required'
+            key !== 'status' && value && value.toLowerCase() !== 'n/a' && value.toLowerCase() !== 'not required' && !key.endsWith(' Image')
           );
 
           return (
@@ -107,7 +107,17 @@ export default function RecommendationScreen({ navigation, route }) {
             >
                 <Text style={styles.recommendationTitle}>{`Suggestion #${index + 1}`}</Text>
                 {outfitDetails.map(([key, value]) => (
-                    <DetailRow key={key} label={key} value={value} />
+                  <View key={key} style={{marginBottom: 10}}>
+                    <DetailRow label={key} value={value} />
+                    {/* Show image if available for this key */}
+                    {outfit[`${key} Image`] && (
+                      <Image
+                        source={{ uri: API_URL + outfit[`${key} Image`] }}
+                        style={styles.suggestionImage}
+                        resizeMode="cover"
+                      />
+                    )}
+                  </View>
                 ))}
 
                 {outfit.status === 'pending' && (
@@ -258,4 +268,15 @@ const styles = StyleSheet.create({
   primaryButton: { backgroundColor: '#C4704F' },
   buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold', marginLeft: 10 },
   secondaryButton: { backgroundColor: '#4CAF50' },
+  suggestionImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 12,
+    marginTop: 5,
+    marginBottom: 10,
+    alignSelf: 'center',
+    borderWidth: 1,
+    borderColor: '#D7CCC8',
+    backgroundColor: '#fff',
+  },
 });

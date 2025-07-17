@@ -1,0 +1,17 @@
+react js py ek app bnao , virtual try on py jjis mn user sab sy pahly
+user apna avatar craete kery , like user apni body ki full image upload kery or phir 
+system us image ka 2d avatar generate ker dy user user avatar ko save ker ly or wo avatar
+ user ka saved avatar wali screen mn 2d modee mn avatar para ho , ab jo avatat ban gaya h usy user kery howay next kaam ye kerna 
+ user k liye  virtual try on wala module bnao , jab user virual try one walay module py click kery to 
+ wahan user jo pahly uper us ka 2d wala avatar show ho ho nicy user ko shirts's ,pants's , shoes's, jackets's , shalwar kamez's , many more outwaer clothes show hon
+ab clothes zeyada ho gy is liye all clothe nich right to left or left to right  scroll hon acha jab
+user scroll ker k jis (pants shits shoes jackets and many more other items))py jaye to 2d modele avatar jo uper show ho raha h 
+us py py fit hoti jaye mtlab achay sy pants shirts , shoes, jeckets many more itame us py aysay fit hon jasy us n
+ actual mn pahny howay hain wo items,mtlb sai fit atti jayn all items full body py us ki body k hesaab sy , like aghr pant
+  scroll ker k lagay to body py pant fit ho jaye ayse he other all items , acha jab user apny wear vitual ready ker ly tu us vitaul wearing model ko save b ker saky , or saved models koi or screen mn pary hon, 
+  bas user k avatar py wo wo items jo us n select ki hain wo achy sy fit hoti jaye, acha lagy us he actual mn waer ki hoi hain ,ab is kaam 
+  k liye tum 
+
+  n jo kuch kerna ab ap py he h chahey (pre trained  models github sy ly lo apny sy bnao , jo jo jahan sy lyna h wo ly lo , bas mera kaam hona chaye, full flag
+  professinla attrctive animated wala , 
+

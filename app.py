@@ -1,3 +1,5 @@
+
+
 from flask import Flask, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
 import os
@@ -24,28 +26,91 @@ app.config["OUTPUT_FOLDER"] = OUTPUT_FOLDER
 
 @app.route('/cartoonify', methods=['GET', 'POST'])
 def upload_image():
+    print("DEBUG: request.files:", request.files)
+    print("DEBUG: request.form:", request.form)
     if request.method == 'GET':
         return jsonify({"message": "Use POST method to upload an image"}), 200
-    
-    if 'image' not in request.files:
-        return jsonify({"error": "No file uploaded"}), 400
 
-    file = request.files['image']
-    if file.filename == '':
-        return jsonify({"error": "No selected file"}), 400
+    # Try to get image from request.files (standard file upload)
+    if 'image' in request.files:
+        file = request.files['image']
+        if not file.filename:
+            return jsonify({"error": "No selected file"}), 400
+        if not file.filename.lower().endswith(('png', 'jpg', 'jpeg', 'webp')):
+            return jsonify({"error": "Unsupported file type"}), 400
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+        file.save(filepath)
+        base64_cartoon = process_image(filepath)
+        if not base64_cartoon:
+            return jsonify({"error": "Failed to process image"}), 500
+        print(f"Cartoonified Image Base64: {base64_cartoon[:100]}...")
+        return jsonify({"cartoonImage": f"data:image/png;base64,{base64_cartoon}"})
 
-    if not file.filename.lower().endswith(('png', 'jpg', 'jpeg')):
-        return jsonify({"error": "Unsupported file type"}), 400
+    # Try to get image from request.form (base64 string, possible from web)
+    elif 'image' in request.form:
+        data = request.form['image']
+        import base64
+        from PIL import Image
+        from io import BytesIO
+        if data.startswith('data:image'):
+            header, data = data.split(',', 1)
+        try:
+            image_data = base64.b64decode(data)
+            image = Image.open(BytesIO(image_data))
+            filename = 'web_upload.png'
+            filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+            image.save(filepath)
+            base64_cartoon = process_image(filepath)
+            if not base64_cartoon:
+                return jsonify({"error": "Failed to process image"}), 500
+            print(f"Cartoonified Image Base64: {base64_cartoon[:100]}...")
+            return jsonify({"cartoonImage": f"data:image/png;base64,{base64_cartoon}"})
+        except Exception as e:
+            print(f"❌ Web upload decode error: {e}")
+            return jsonify({"error": "Invalid image data"}), 400
 
-    filename = secure_filename(file.filename)
-    filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-    file.save(filepath)
+    return jsonify({"error": "No file uploaded"}), 400
 
-    base64_cartoon = process_image(filepath)
-    if not base64_cartoon:
-        return jsonify({"error": "Failed to process image"}), 500
-    print(f"Cartoonified Image Base64: {base64_cartoon[:100]}...")
-    return jsonify({"cartoonImage": f"data:image/png;base64,{base64_cartoon}"})
+
+@app.route('/update_profile_image', methods=['POST'])
+def update_profile_image():
+    """Endpoint to update user's profile image (avatar). Accepts user_id/email and image (file or base64)."""
+    user_id = request.form.get('user_id') or request.json.get('user_id') if request.is_json else None
+    if not user_id:
+        return jsonify({'error': 'Missing user_id'}), 400
+
+    # Try to get image from request.files (standard file upload)
+    if 'image' in request.files:
+        file = request.files['image']
+        if not file.filename:
+            return jsonify({'error': 'No selected file'}), 400
+        if not file.filename.lower().endswith(('png', 'jpg', 'jpeg', 'webp')):
+            return jsonify({'error': 'Unsupported file type'}), 400
+        filename = secure_filename(f"{user_id}_profile_{file.filename}")
+        filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+        file.save(filepath)
+        image_url = f"/uploads/{filename}"
+        return jsonify({'success': True, 'image_url': image_url}), 200
+
+    # Try to get image from request.form (base64 string)
+    elif 'image' in request.form:
+        data = request.form['image']
+        if data.startswith('data:image'):
+            header, data = data.split(',', 1)
+        try:
+            image_data = base64.b64decode(data)
+            image = Image.open(BytesIO(image_data))
+            filename = secure_filename(f"{user_id}_profile.png")
+            filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+            image.save(filepath)
+            image_url = f"/uploads/{filename}"
+            return jsonify({'success': True, 'image_url': image_url}), 200
+        except Exception as e:
+            print(f"❌ Profile image decode error: {e}")
+            return jsonify({'error': 'Invalid image data'}), 400
+
+    return jsonify({'error': 'No image uploaded'}), 400
 
 
 def process_image(image_path, crop_coords=None, avatar_size=(512, 512)):
@@ -57,7 +122,10 @@ def process_image(image_path, crop_coords=None, avatar_size=(512, 512)):
         removed_bg = remove(input_image)  # Remove background
 
         # Convert to PIL image
-        image_no_bg = Image.open(BytesIO(removed_bg)).convert("RGBA")
+        if isinstance(removed_bg, bytes):
+            image_no_bg = Image.open(BytesIO(removed_bg)).convert("RGBA")
+        else:
+            image_no_bg = Image.fromarray(removed_bg).convert("RGBA")
 
         # Crop if coordinates are provided
         if crop_coords:

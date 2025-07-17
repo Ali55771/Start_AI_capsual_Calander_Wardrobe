@@ -13,18 +13,38 @@ app = Flask(__name__)
 
 # --- Data Loading and Column Standardization ---
 def load_data(file_path='dataset.xlsx'):
-    try:
-        excel_data = pd.ExcelFile(file_path)
-        df = excel_data.parse(excel_data.sheet_names[0])
-        # Standardize column names: lowercase, strip, replace various spaces/special chars with a single underscore
-        original_columns = df.columns.tolist()
-        df.columns = [re.sub(r'[^a-zA-Z0-9]+', '_', col).lower().strip('_') for col in original_columns]
-        print("Dataset loaded successfully.")
-        return df
-    except FileNotFoundError:
+    """Load and standardize the dataset."""
+    if not os.path.exists(file_path):
         print(f"Error: The file '{file_path}' was not found.")
         return pd.DataFrame()
+        
+    try:
+        # Load Excel file
+        excel_data = pd.ExcelFile(file_path)
+        
+        # Parse first sheet
+        df = excel_data.parse(excel_data.sheet_names[0])
+        
+        if df.empty:
+            print("Warning: Dataset is empty")
+            return pd.DataFrame()
+            
+        # Standardize column names
+        original_columns = df.columns.tolist()
+        df.columns = [re.sub(r'[^a-zA-Z0-9]+', '_', str(col)).lower().strip('_') for col in original_columns]
+        
+        # Fill NaN values with empty string for string operations
+        string_columns = df.select_dtypes(include=['object']).columns
+        df[string_columns] = df[string_columns].fillna('')
+        
+        print(f"Dataset loaded successfully with {len(df)} rows.")
+        return df
+        
+    except Exception as e:
+        print(f"Error loading dataset: {str(e)}")
+        return pd.DataFrame()
 
+# Load dataset
 rule_data = load_data()
 
 # --- Helper Functions ---
@@ -149,18 +169,32 @@ def get_recommendations(current_temp: str, gender: str, event: str, outfit: str,
             print("CRITICAL: All data removed due to gender validation")
             return []
 
+    # Parse temperature
     try:
-        temp = float(current_temp) if isinstance(current_temp, (int, float)) else float(re.search(r'(-?\d+(\.\d+)?)', str(current_temp)).group(0))
-        temp = max(0, min(45, temp))  # Clamp temperature between 0 and 45
+        # Handle numeric input
+        if isinstance(current_temp, (int, float)):
+            temp = float(current_temp)
+        # Handle string input
+        else:
+            match = re.search(r'(-?\d+(\.\d+)?)', str(current_temp))
+            if not match:
+                print(f"Warning: Could not parse temperature '{current_temp}', defaulting to 25")
+                temp = 25
+            else:
+                temp = float(match.group(0))
+        
+        # Clamp temperature between 0 and 45
+        temp = max(0, min(45, temp))
+        
+        # Determine weather range
         if 0 <= temp <= 10: weather_range = "0-10"
         elif 11 <= temp <= 20: weather_range = "10-20"
         elif 21 <= temp <= 30: weather_range = "20-30"
         elif 31 <= temp <= 40: weather_range = "30-40"
         else: weather_range = "41+"
-    except (ValueError, TypeError, AttributeError):
-        print(f"Warning: Could not parse temperature '{current_temp}', defaulting to 25")
-        weather_range = "20-30"
-    except (ValueError, TypeError):
+            
+    except Exception as e:
+        print(f"Warning: Temperature parsing failed: {str(e)}, defaulting to 20-30 range")
         weather_range = "20-30"
 
     print(f"\n--- Starting Recommendation Generation for: Gender='{gender}', Event='{event}', Outfit='{outfit}', Time='{time_of_day}', Weather='{weather_range}' ---")
@@ -181,7 +215,7 @@ def get_recommendations(current_temp: str, gender: str, event: str, outfit: str,
             all_outfits.extend(list(product(*items)))
         # Return a list of unique tuples
         return list(set(all_outfits))
-
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
     # Tier 1: Perfect Match (within gender-specific data)
     print("--- Tier 1: Attempting Perfect Match ---")
     strict_rules = gender_specific_data[
@@ -258,14 +292,38 @@ def get_recommendations(current_temp: str, gender: str, event: str, outfit: str,
         recommendations = max_distinct_outfits(fallback_outfits, max_outfits=3, existing_outfits=recommendations)
         print(f"Total recommendations after Fallback: {len(recommendations)}")
 
-    # Final Formatting
+    # --- Image Fetching Helper ---
+    def find_image_for_item(item_type, item_value):
+        uploads_dir = os.path.join(os.getcwd(), 'uploads')
+        if not os.path.exists(uploads_dir):
+            return None
+        # Search for image files that match item_value (case-insensitive, partial match)
+        for fname in os.listdir(uploads_dir):
+            if fname.lower().endswith(('.jpg', '.jpeg', '.png')) and item_value and item_value.lower() in fname.lower():
+                return f'/uploads/{fname}'
+        return None
+
+    # Final Formatting with images
     final_recommendations = []
     for item in recommendations:
-        final_recommendations.append({
-            "Dress Type": item[0], "Dress Color": item[1], "Dress Fabric/Texture": item[2],
-            "Shoes Type": item[3], "Shoes Color": item[4],
-            "Upper Layer": item[5], "Upper Layer Color": item[6]
-        })
+        rec = {
+            "Dress Type": item[0],
+            "Dress Color": item[1],
+            "Dress Fabric/Texture": item[2],
+            "Shoes Type": item[3],
+            "Shoes Color": item[4],
+            "Upper Layer": item[5],
+            "Upper Layer Color": item[6],
+        }
+        # Add image URLs for each item
+        rec["Dress Type Image"] = find_image_for_item("dress_type", item[0])
+        rec["Dress Color Image"] = find_image_for_item("dress_color", item[1])
+        rec["Dress Fabric/Texture Image"] = find_image_for_item("dress_fabric_texture", item[2])
+        rec["Shoes Type Image"] = find_image_for_item("shoes_type", item[3])
+        rec["Shoes Color Image"] = find_image_for_item("shoes_color", item[4])
+        rec["Upper Layer Image"] = find_image_for_item("upper_layer", item[5])
+        rec["Upper Layer Color Image"] = find_image_for_item("upper_layer_color", item[6])
+        final_recommendations.append(rec)
     return final_recommendations
 
 # --- Feedback Endpoint ---
@@ -327,19 +385,37 @@ def recommend():
 
 @app.route('/save_recommendations', methods=['POST'])
 def save_recommendations():
-    data = request.json.get('recommendations', [])
-    if not data:
-        return jsonify({'error': 'No data provided'}), 400
-    # Save to CSV (or use your DB logic here)
-    file_path = 'saved_recommendations.csv'
-    write_header = not os.path.exists(file_path) or os.stat(file_path).st_size == 0
-    with open(file_path, 'a', newline='', encoding='utf-8') as f:
-        writer = csv.DictWriter(f, fieldnames=data[0].keys())
-        if write_header:
-            writer.writeheader()
-        for rec in data:
-            writer.writerow(rec)
-    return jsonify({'message': 'Saved successfully'}), 200
+    """Save recommendations to CSV file."""
+    # Validate request
+    if not request.is_json:
+        return jsonify({'error': 'Request must be JSON'}), 400
+        
+    recommendations = request.json
+    if not isinstance(recommendations, dict) or 'recommendations' not in recommendations:
+        return jsonify({'error': 'Invalid request format. Must include recommendations field'}), 400
+        
+    data = recommendations['recommendations']
+    if not data or not isinstance(data, list):
+        return jsonify({'error': 'No valid recommendations provided'}), 400
+        
+    try:
+        # Save to CSV
+        file_path = 'saved_recommendations.csv'
+        write_header = not os.path.exists(file_path) or os.stat(file_path).st_size == 0
+        
+        with open(file_path, 'a', newline='', encoding='utf-8') as f:
+            if data:  # Check if we have any recommendations
+                writer = csv.DictWriter(f, fieldnames=data[0].keys())
+                if write_header:
+                    writer.writeheader()
+                for rec in data:
+                    writer.writerow(rec)
+                    
+        return jsonify({'message': f'Successfully saved {len(data)} recommendations'}), 200
+        
+    except Exception as e:
+        print(f"Error saving recommendations: {str(e)}")
+        return jsonify({'error': 'Failed to save recommendations'}), 500
 
 # --- Main Execution ---
 if __name__ == '__main__':
